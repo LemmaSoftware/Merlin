@@ -1,0 +1,14 @@
+/**
+ * @file
+ * @date      09/15/2016 04:28:16 PM
+ * @author    Trevor Irons (ti)
+ * @email     tirons@egi.utah.edu
+ * @copyright Copyright (c) 2016, University of Utah
+ * @copyright Copyright (c) 2016, Lemma Software, LLC
+ */
+
+/**
+    \defgroup Merlin Merlin
+    @brief    Merlin provides surface NMR capabilities.
+    @details  Merlin provides classes and methods for sNMR modelling and inversion.
+*/
