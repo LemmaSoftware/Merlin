@@ -128,12 +128,112 @@ namespace Lemma {
 
     }
 
-    void KernelV0::CalculateK0 ( const char* tx, const char* rx ) {
+    //--------------------------------------------------------------------------------------
+    //       Class:  KernelV0
+    //      Method:  IntegrateOnOctreeGrid
+    //--------------------------------------------------------------------------------------
+    void KernelV0::IntegrateOnOctreeGrid( const Real& tolerance) {
 
+        Vector3r                Size;
+        Vector3r                Origin;
+        Vector3r                step;
+        Vector3r                cpos;
+
+        int                     level;
+        int                     maxlevel;
+        int                     index;
+        int                     counter;
+
+        Real                    cvol;
+        Real                    tvol;
+        Real                    tol;
+        Complex                 KernelSum;
+
+        //this->tol = tolerance;
+        Real KernelSum = 0.;
+        //Cursor->ToRoot();
+        //Cubes->SetNumberOfReceivers(8);
+        EvaluateKids( 1e9 ); // Large initial number don't waste time actually computing
+        //EvaluateKids();
+        //std::cout << "Kernel Sum from Generate Mesh "
+        //    << std::real(KernelSum) << "\t" << std::imag(KernelSum) << std::endl;
+
+        // old VTK thingy
+        //SetLeafDataFromGridCreation();
+    }
+
+    //--------------------------------------------------------------------------------------
+    //       Class:  KernelV0
+    //      Method:  EvaluateKids
+    //--------------------------------------------------------------------------------------
+    void KernelV0::EvaluateKids(const Complex& kval) {
+
+        assert("Evaluate Kids pre" && Cursor->CurrentIsLeaf());
+        vtkHyperOctreeCursor *tcurse = Cursor->Clone();
+        Real p[3];
+        Octree->SubdivideLeaf(Cursor);
+        tcurse->ToSameNode(Cursor);
+        std::cout << "\rPredivide Leaf count: " << Octree->GetNumberOfLeaves();
+
+        //std::cout.flush();
+        for (int child=0; child<8; ++child) {
+            Cursor->ToChild(child);
+            assert(Cursor->CurrentIsLeaf());
+            // Build cube
+            GetPosition(p);
+            cpos <<  p[0], p[1], p[2];
+            step  = ((Size).array() / std::pow(2.,Cursor->GetCurrentLevel()));
+            Cubes->SetLocation(child, cpos);
+            Cubes->SetLength(child, step);
+            //std::cout << "child " << child << " cpos\t" << cpos.transpose() << std::endl;
+            //std::cout << "child " << child << " step\t" << step.transpose() << std::endl;
+            Cursor->ToSameNode(tcurse);
+        }
+
+        // make calculation
+        Cubes->ClearFields();
+        VectorXcr f = SenseKernel->ComputeSensitivity();
+        if ( std::abs(std::abs(kval) - std::abs(f.array().abs().sum())) <= tol ||
+            Cursor->GetCurrentLevel() >= maxlevel ) {
+    	    // stop subdividing, save result
+    	    for (int child=0; child < 8; ++ child) {
+    	        Cursor->ToChild(child);
+    	        leafdata.push_back( std::abs(f(child)) / Cubes->GetVolume(child) );
+    	        // TODO fval is just a test
+    	        //leafdata.push_back( fval );
+    	        leafids.push_back(Cursor->GetLeafId());
+    	        KernelSum += f(child);
+    	        Cursor->ToParent();
+            }
+    	    return;
+        }
+
+        //std::cout << std::abs(kval) << "\t" <<
+        //         std::abs(f.array().abs().sum()) << "\t" << tol << std::endl;
+        for (int child=0; child < 8; ++ child) {
+            //std::cout << "Down the rabit hole " <<std::endl;
+            Cursor->ToChild(child);
+            EvaluateKids( f(child) );
+            //Cursor->ToParent();
+            Cursor->ToSameNode(tcurse);
+        }
+        tcurse->Delete();
+    }
+
+    //--------------------------------------------------------------------------------------
+    //       Class:  KernelV0
+    //      Method:  EvaluateKids
+    //--------------------------------------------------------------------------------------
+    void OctreeGrid::GetPosition( Real* p ) {
+        Real ratio=1.0/(1<<(Cursor->GetCurrentLevel()));
+        //step  = ((Size).array() / std::pow(2.,Cursor->GetCurrentLevel()));
+        p[0]=(Cursor->GetIndex(0)+.5)*ratio*Size[0]+Origin[0] ;//+ .5*step[0];
+        p[1]=(Cursor->GetIndex(1)+.5)*ratio*Size[1]+Origin[1] ;//+ .5*step[1];
+        p[2]=(Cursor->GetIndex(2)+.5)*ratio*Size[2]+Origin[2] ;//+ .5*step[2];
     }
 
 } // ----  end of namespace Lemma  ----
 
-/* vim: set tabstop=4 expandtab: */
-/* vim: set filetype=cpp: */
+/* vim: set tabstop=4 expandtab */
+/* vim: set filetype=cpp */
 

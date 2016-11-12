@@ -121,11 +121,11 @@ namespace Lemma {
         }
 
         /**
-         *
+         *   Calculates a single imaging kernel, however, phased arrays are supported
+         *   so that more than one transmitter and/or receiver can be specified.
+         *   @param[in]
          */
         void CalculateK0 (const std::vector< std::string >& tx, const std::vector< std::string >& rx );
-
-        void CalculateK0 (const char* tx, const char* rx );
 
         // ====================  INQUIRY       =======================
         /**
@@ -143,11 +143,17 @@ namespace Lemma {
         /** Copy is disabled */
         KernelV0( const KernelV0& ) = delete;
 
-        // ====================  DATA MEMBERS  =========================
-
         private:
 
-        std::shared_ptr< LayeredEarthEM >        SigmaModel;
+        void IntegrateOnOctreeGrid( const Real& tolerance );
+
+        void EvaluateKids();
+
+        void EvaluateKids( const Complex& parentVal );
+
+        // ====================  DATA MEMBERS  =========================
+
+        std::shared_ptr< LayeredEarthEM >        SigmaModel = nullptr;
 
         std::map< std::string , std::shared_ptr< PolygonalWireAntenna > >  TxRx;
 
@@ -157,7 +163,7 @@ namespace Lemma {
     }; // -----  end of class  KernelV0  -----
 }  // -----  end of namespace Lemma ----
 
-/* vim: set tabstop=4 expandtab: */
-/* vim: set filetype=cpp: */
+/* vim: set tabstop=4 expandtab */
+/* vim: set filetype=cpp */
 
 #endif   // ----- #ifndef KERNELV0_INC  -----
