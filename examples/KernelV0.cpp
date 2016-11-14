@@ -30,8 +30,8 @@ int main() {
 		earth->SetLayerThickness( (VectorXr(1) << 10).finished() );
 
     // Transmitter loops
-    auto Tx1 = CircularLoop(60, 15, 0, 0);
-    auto Tx2 = CircularLoop(60, 15, 15, 0);
+    auto Tx1 = CircularLoop(60, 15, 50, 50);
+    auto Tx2 = CircularLoop(60, 15, 55, 50);
     //auto Tx1 = CircularLoop(60, 15, 0, 0); // was 60
 
     auto Kern = KernelV0::NewSP();
@@ -44,7 +44,7 @@ int main() {
     // may be more natural to work with?
     std::vector<std::string> tx = {std::string("Coil 1")};
     std::vector<std::string> rx = {std::string("Coil 1")};
-    Kern->CalculateK0( tx, rx );
+    Kern->CalculateK0( tx, rx , false ); //, false );
     //Kern->CalculateK0( "Coil 1", "Coil 1" );
 
 }

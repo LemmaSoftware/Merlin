@@ -23,6 +23,13 @@
 #include "LemmaObject.h"
 #include "LayeredEarthEM.h"
 #include "PolygonalWireAntenna.h"
+#include "EMEarth1D.h"
+
+#ifdef LEMMAUSEVTK
+#include "vtkHyperOctree.h"
+#include "vtkHyperOctreeCursor.h"
+#include "vtkXMLHyperOctreeWriter.h"
+#endif
 
 namespace Lemma {
 
@@ -123,9 +130,15 @@ namespace Lemma {
         /**
          *   Calculates a single imaging kernel, however, phased arrays are supported
          *   so that more than one transmitter and/or receiver can be specified.
-         *   @param[in]
+         *   @param[in] tx is the list of transmitters to use for a kernel, use the same labels as
+         *              used in PushCoil.
+         *   @param[in] rx is the list of receivers to use for a kernel, use the same labels as
+         *              used in PushCoil. @see PushCoil
+         *   @param[in] vtkOutput generates a VTK hyperoctree file as well, useful for visualization.
+         *              requires compilation of Lemma with VTK.
          */
-        void CalculateK0 (const std::vector< std::string >& tx, const std::vector< std::string >& rx );
+        void CalculateK0 (const std::vector< std::string >& tx, const std::vector< std::string >& rx,
+                bool vtkOutput=false );
 
         // ====================  INQUIRY       =======================
         /**
@@ -148,9 +161,9 @@ namespace Lemma {
         /**
          *  Returns the kernel value for an input prism
          */
-        Complex f( const Vector3r& r, const Real& volume );
+        Complex f( const Vector3r& r, const Real& volume , const Vector3cr& Bt);
 
-        void IntegrateOnOctreeGrid( const Real& tolerance );
+        void IntegrateOnOctreeGrid( const Real& tolerance , bool vtkOutput=false );
 
         /**
          *  Recursive call to integrate a function on an adaptive Octree Grid.
@@ -165,17 +178,32 @@ namespace Lemma {
         bool EvaluateKids(  const Vector3r& size, const int& level, const Vector3r& cpos,
                             const Complex& parentVal );
 
+        #ifdef LEMMAUSEVTK
+        /**
+         *  Same functionality as @see EvaluateKids, but includes generation of a VTK
+         *  HyperOctree, which is useful for visualization.
+         */
+        bool EvaluateKids2(  const Vector3r& size, const int& level, const Vector3r& cpos,
+                            const Complex& parentVal, vtkHyperOctree* octree, vtkHyperOctreeCursor* curse );
+        #endif
+
         // ====================  DATA MEMBERS  =========================
 
-        Complex                                  SUM;
+        Complex                                   SUM;
 
-        Real                                     tol=1e-3;
+        Real                                      tol=1e-3;
 
-        int                                      nleaves;
+        int                                       nleaves;
 
-        std::shared_ptr< LayeredEarthEM >        SigmaModel = nullptr;
+        std::shared_ptr< LayeredEarthEM >         SigmaModel = nullptr;
 
         std::map< std::string , std::shared_ptr< PolygonalWireAntenna > >  TxRx;
+
+        std::vector< std::shared_ptr<EMEarth1D> > EMEarths;
+
+        #ifdef LEMMAUSEVTK
+        std::map< int, Complex  >                 LeafDict;
+        #endif
 
         /** ASCII string representation of the class name */
         static constexpr auto CName = "KernelV0";
