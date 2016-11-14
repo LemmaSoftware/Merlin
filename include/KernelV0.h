@@ -29,6 +29,7 @@
 #include "vtkHyperOctree.h"
 #include "vtkHyperOctreeCursor.h"
 #include "vtkXMLHyperOctreeWriter.h"
+#include "vtkDoubleArray.h"
 #endif
 
 namespace Lemma {
@@ -185,15 +186,22 @@ namespace Lemma {
          */
         bool EvaluateKids2(  const Vector3r& size, const int& level, const Vector3r& cpos,
                             const Complex& parentVal, vtkHyperOctree* octree, vtkHyperOctreeCursor* curse );
+
+        void GetPosition( vtkHyperOctreeCursor* Cursor, Real* p );
         #endif
 
         // ====================  DATA MEMBERS  =========================
 
         Complex                                   SUM;
 
+        Real                                      VOLSUM;
+
         Real                                      tol=1e-3;
 
         int                                       nleaves;
+
+        Vector3r   Size;
+        Vector3r   Origin;
 
         std::shared_ptr< LayeredEarthEM >         SigmaModel = nullptr;
 

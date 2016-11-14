@@ -118,7 +118,7 @@ namespace Lemma {
                 // TODO query for method, altough with flat antennae, this is fastest
                 EMEarths.back()->SetHankelTransformMethod(ANDERSON801);
         }
-        IntegrateOnOctreeGrid( 1e-7, vtkOutput );
+        IntegrateOnOctreeGrid( 1e-1, vtkOutput );
 
     }
 
@@ -129,15 +129,17 @@ namespace Lemma {
     void KernelV0::IntegrateOnOctreeGrid( const Real& tolerance, bool vtkOutput) {
 
         this->tol = tolerance;
-        Vector3r                Size;
-            Size << 100,100,100;
-        Vector3r                Origin;
+        //Vector3r                Size;
+            Size << 200,200,100;
+        //Vector3r                Origin;
             Origin << 0,0,0;
-        Vector3r                cpos;
-            cpos << 50,50,50;
+        Vector3r                cpos;  // centre position
+            //cpos << 100,100,50;
+            cpos = (Size-Origin).array() / 2.;
         int                     maxlevel;
 
         SUM = 0;
+        VOLSUM = 0;
         nleaves = 0;
         if (!vtkOutput) {
             EvaluateKids( Size, 0, cpos, 1e6 );
@@ -150,12 +152,32 @@ namespace Lemma {
             vtkHyperOctreeCursor* curse = oct->NewCellCursor();
                 curse->ToRoot();
             EvaluateKids2( Size, 0, cpos, 1e6, oct, curse );
+
+            // Fill in leaf data
+            vtkDoubleArray* kr = vtkDoubleArray::New();
+                kr->SetNumberOfComponents(1);
+                kr->SetName("Re($K_0$)");
+                kr->SetNumberOfTuples( oct->GetNumberOfLeaves() );
+            vtkDoubleArray* ki = vtkDoubleArray::New();
+                ki->SetNumberOfComponents(1);
+                ki->SetName("Im($K_0$)");
+                ki->SetNumberOfTuples( oct->GetNumberOfLeaves() );
+            for (auto leaf : LeafDict) {
+                kr->InsertTuple1( leaf.first, std::real(leaf.second) );
+                ki->InsertTuple1( leaf.first, std::imag(leaf.second) );
+            }
+            oct->GetLeafData()->AddArray(kr);
+            oct->GetLeafData()->AddArray(ki);
+
             auto write = vtkXMLHyperOctreeWriter::New();
                 //write.SetDataModeToAscii()
                 write->SetInputData(oct);
                 write->SetFileName("octree.vto");
                 write->Write();
                 write->Delete();
+
+            kr->Delete();
+            ki->Delete();
             curse->Delete();
             oct->Delete();
         #else
@@ -163,8 +185,9 @@ namespace Lemma {
         #endif
 
         }
-        std::cout << "SUM\t" << SUM << "\t" << 100*100*100 << "\t" << SUM - Complex(100.*100.*100.) <<  std::endl;
+        std::cout << "\nVOLSUM=" << VOLSUM << "\tActual=" <<  Size(0)*Size(1)*Size(2) << "\tDifference=" << VOLSUM - (Size(0)*Size(1)*Size(2)) <<  std::endl;
         std::cout << "nleaves\t" << nleaves << std::endl;
+        std::cout << "KSUM\t" << SUM << std::endl;
 
     }
 
@@ -174,6 +197,7 @@ namespace Lemma {
     //--------------------------------------------------------------------------------------
     Complex KernelV0::f( const Vector3r& r, const Real& volume, const Vector3cr& Bt ) {
         //std::cout << volume*Bt.norm() << std::endl;
+        //return Complex(volume*Bt.norm());
         return Complex(volume*Bt.norm());
         //return Complex(volume);
     }
@@ -187,9 +211,10 @@ namespace Lemma {
 
         // Next level step, interested in one level below
         // bitshift requires one extra, faster than, and equivalent to std::pow(2, level+1)
-        Vector3r step = size.array() / (Real)(1 << (level+2) );
+        Vector3r step  = size.array() / (Real)(1 << (level+1) );
+        Vector3r step2 = size.array() / (Real)(1 << (level+2) );
 
-        Real vol = step(0)*step(1)*step(2);     // volume of each child
+        Real vol = (step2(0)*step2(1)*step2(2));     // volume of each child
 
         Vector3r pos =  cpos - step/2.;
         Eigen::Matrix<Real, 8, 3> posadd = (Eigen::Matrix<Real, 8, 3>() <<
@@ -227,13 +252,14 @@ namespace Lemma {
 
         Complex ksum = kvals.sum();     // Kernel sum
         // Evaluate whether or not furthur splitting is needed
-        if ( std::abs(ksum - parentVal) > tol || level < 5 ) {
+        if ( std::abs(ksum - parentVal) > tol || level < 2 ) {
             for (int ichild=0; ichild<8; ++ichild) {
                 Vector3r cp = pos; // Eigen complains about combining these
                 cp += posadd.row(ichild);
                 bool isleaf = EvaluateKids( size, level+1, cp, kvals(ichild) );
                 if (isleaf) {      // Include result in final integral
                     SUM += ksum;
+                    VOLSUM += 8.*vol;
                     nleaves += 1;
                 }
             }
@@ -251,14 +277,15 @@ namespace Lemma {
     bool KernelV0::EvaluateKids2( const Vector3r& size, const int& level, const Vector3r& cpos,
         const Complex& parentVal, vtkHyperOctree* oct, vtkHyperOctreeCursor* curse) {
 
-        std::cout << "\rlevel " << level << "\t" << nleaves;
-        std::cout.flush();
+        //std::cout << "\rlevel " << level << "\t" << nleaves;
+        //std::cout.flush();
 
         // Next level step, interested in one level below
         // bitshift requires one extra, faster than, and equivalent to std::pow(2, level+1)
-        Vector3r step = size.array() / (Real)(1 << (level+2) );
+        Vector3r step  = size.array() / (Real)(1 << (level+1) );
+        Vector3r step2 = size.array() / (Real)(1 << (level+2) );
 
-        Real vol = step(0)*step(1)*step(2);     // volume of each child
+        Real vol = (step2(0)*step2(1)*step2(2));     // volume of each child
 
         Vector3r pos =  cpos - step/2.;
         Eigen::Matrix<Real, 8, 3> posadd = (Eigen::Matrix<Real, 8, 3>() <<
@@ -295,16 +322,20 @@ namespace Lemma {
 
         Complex ksum = kvals.sum();     // Kernel sum
         // Evaluate whether or not furthur splitting is needed
-        if ( std::abs(ksum - parentVal) > tol || level < 3 ) {
+        if ( std::abs(ksum - parentVal) > tol || level < 2 ) {
             oct->SubdivideLeaf(curse);
             for (int ichild=0; ichild<8; ++ichild) {
                 curse->ToChild(ichild);
                 Vector3r cp = pos; // Eigen complains about combining these
                 cp += posadd.row(ichild);
+                //Real p[3];
+                //GetPosition(curse, p);
+                //std::cout << cp[0] << "\t" << p[0] << "\t" << cp[1] << "\t" << p[1] << "\t" << cp[2] << "\t" << p[2] << "\t" <<  vol<< std::endl;
                 bool isleaf = EvaluateKids2( size, level+1, cp, kvals(ichild), oct, curse );
                 if (isleaf) {  // Include result in final integral
                     LeafDict[curse->GetLeafId()] = kvals(ichild);       // VTK
                     SUM += ksum;
+                    VOLSUM += 8*vol;
                     nleaves += 1;
                 }
                 curse->ToParent();
@@ -313,6 +344,15 @@ namespace Lemma {
         }
         return true;       // leaf
     }
+
+    void KernelV0::GetPosition( vtkHyperOctreeCursor* Cursor, Real* p ) {
+        Real ratio=1.0/(1<<(Cursor->GetCurrentLevel()));
+        //step  = ((Size).array() / std::pow(2.,Cursor->GetCurrentLevel()));
+        p[0]=(Cursor->GetIndex(0)+.5)*ratio*this->Size[0]+this->Origin[0] ;//+ .5*step[0];
+        p[1]=(Cursor->GetIndex(1)+.5)*ratio*this->Size[1]+this->Origin[1] ;//+ .5*step[1];
+        p[2]=(Cursor->GetIndex(2)+.5)*ratio*this->Size[2]+this->Origin[2] ;//+ .5*step[2];
+    }
+
     #endif
 
 } // ----  end of namespace Lemma  ----

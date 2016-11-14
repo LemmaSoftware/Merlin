@@ -30,7 +30,7 @@ int main() {
 		earth->SetLayerThickness( (VectorXr(1) << 10).finished() );
 
     // Transmitter loops
-    auto Tx1 = CircularLoop(60, 15, 50, 50);
+    auto Tx1 = CircularLoop(60, 15, 100, 100);
     auto Tx2 = CircularLoop(60, 15, 55, 50);
     //auto Tx1 = CircularLoop(60, 15, 0, 0); // was 60
 
