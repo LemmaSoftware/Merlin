@@ -145,13 +145,33 @@ namespace Lemma {
 
         private:
 
+        /**
+         *  Returns the kernel value for an input prism
+         */
+        Complex f( const Vector3r& r, const Real& volume );
+
         void IntegrateOnOctreeGrid( const Real& tolerance );
 
-        void EvaluateKids();
-
-        void EvaluateKids( const Complex& parentVal );
+        /**
+         *  Recursive call to integrate a function on an adaptive Octree Grid.
+         *  For efficiency's sake the octree grid is not stored, as only the
+         *  integral (sum) is of interest. The logic for grid refinement is based
+         *  on an Octree representation of the domain. If an Octree representation
+         *  of the kernel is desired, call alternative version @see EvaluateKids2
+         *  @param[in] size gives the domain size, in  metres
+         *  @param[in] level gives the current level of the octree grid, call with 0 initially
+         *  @param[in] cpos is the centre position of the parent cuboid
+         */
+        bool EvaluateKids(  const Vector3r& size, const int& level, const Vector3r& cpos,
+                            const Complex& parentVal );
 
         // ====================  DATA MEMBERS  =========================
+
+        Complex                                  SUM;
+
+        Real                                     tol=1e-3;
+
+        int                                      nleaves;
 
         std::shared_ptr< LayeredEarthEM >        SigmaModel = nullptr;
 

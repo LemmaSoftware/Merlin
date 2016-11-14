@@ -114,6 +114,8 @@ namespace Lemma {
                 // TODO query for method, altough with flat antennae, this is fastest
                 EmEarth->SetHankelTransformMethod(ANDERSON801);
 
+        IntegrateOnOctreeGrid( 1e-2 );
+
 // 		EmEarth->AttachFieldPoints(receivers);
 //         //EmEarth->SetHankelTransformMethod(FHTKEY101);
 // 	    EmEarth->CalculateWireAntennaFields();
@@ -134,102 +136,78 @@ namespace Lemma {
     //--------------------------------------------------------------------------------------
     void KernelV0::IntegrateOnOctreeGrid( const Real& tolerance) {
 
+        this->tol = tolerance;
         Vector3r                Size;
-        Vector3r                Origin;
-        Vector3r                step;
+            Size << 100,100,100;
+        //Vector3r                Origin;
         Vector3r                cpos;
-
-        int                     level;
+            cpos << 50,50,50;
         int                     maxlevel;
-        int                     index;
-        int                     counter;
 
-        Real                    cvol;
-        Real                    tvol;
-        Real                    tol;
-        Complex                 KernelSum;
+        SUM = 0;
+        nleaves = 0;
+        EvaluateKids( Size, 0, cpos, -1e2 );
+        std::cout << "SUM\t" << SUM << "\t" << 100*100*100 << "\t" << SUM - Complex(100.*100.*100.) <<  std::endl;
+        std::cout << "nleaves\t" << nleaves << std::endl;
 
-        //this->tol = tolerance;
-        Real KernelSum = 0.;
-        //Cursor->ToRoot();
-        //Cubes->SetNumberOfReceivers(8);
-        EvaluateKids( 1e9 ); // Large initial number don't waste time actually computing
-        //EvaluateKids();
-        //std::cout << "Kernel Sum from Generate Mesh "
-        //    << std::real(KernelSum) << "\t" << std::imag(KernelSum) << std::endl;
+    }
 
-        // old VTK thingy
-        //SetLeafDataFromGridCreation();
+    //--------------------------------------------------------------------------------------
+    //       Class:  KernelV0
+    //      Method:  f
+    //--------------------------------------------------------------------------------------
+    Complex KernelV0::f( const Vector3r& r, const Real& volume ) {
+        return Complex(volume);
     }
 
     //--------------------------------------------------------------------------------------
     //       Class:  KernelV0
     //      Method:  EvaluateKids
     //--------------------------------------------------------------------------------------
-    void KernelV0::EvaluateKids(const Complex& kval) {
+    bool KernelV0::EvaluateKids( const Vector3r& size, const int& level, const Vector3r& cpos,
+        const Complex& parentVal ) {
 
-        assert("Evaluate Kids pre" && Cursor->CurrentIsLeaf());
-        vtkHyperOctreeCursor *tcurse = Cursor->Clone();
-        Real p[3];
-        Octree->SubdivideLeaf(Cursor);
-        tcurse->ToSameNode(Cursor);
-        std::cout << "\rPredivide Leaf count: " << Octree->GetNumberOfLeaves();
+        // Next level step, interested in one level below
+        // bitshift requires one extra, faster than, and equivalent to std::pow(2, level+1)
+        Vector3r step = size.array() / (Real)(1 << (level+2) );
 
-        //std::cout.flush();
-        for (int child=0; child<8; ++child) {
-            Cursor->ToChild(child);
-            assert(Cursor->CurrentIsLeaf());
-            // Build cube
-            GetPosition(p);
-            cpos <<  p[0], p[1], p[2];
-            step  = ((Size).array() / std::pow(2.,Cursor->GetCurrentLevel()));
-            Cubes->SetLocation(child, cpos);
-            Cubes->SetLength(child, step);
-            //std::cout << "child " << child << " cpos\t" << cpos.transpose() << std::endl;
-            //std::cout << "child " << child << " step\t" << step.transpose() << std::endl;
-            Cursor->ToSameNode(tcurse);
+        Real vol = step(0)*step(1)*step(2);     // volume of each child
+
+        Vector3r pos =  cpos - step/2.;
+        Eigen::Matrix<Real, 8, 3> posadd = (Eigen::Matrix<Real, 8, 3>() <<
+                        0,       0,       0,
+                  step[0],       0,       0,
+                        0, step[1],       0,
+                  step[0], step[1],       0,
+                        0,       0, step[2],
+                  step[0],       0, step[2],
+                        0, step[1], step[2],
+                  step[0], step[1], step[2] ).finished();
+
+        VectorXcr kvals(8);                     // individual kernel vals
+        for (int ichild=0; ichild<8; ++ichild) {
+            Vector3r cp = pos; // Eigen complains about combining these
+            cp += posadd.row(ichild);
+            kvals(ichild) = f(cp, vol);
         }
+        Complex ksum = kvals.sum();     // Kernel sum
 
-        // make calculation
-        Cubes->ClearFields();
-        VectorXcr f = SenseKernel->ComputeSensitivity();
-        if ( std::abs(std::abs(kval) - std::abs(f.array().abs().sum())) <= tol ||
-            Cursor->GetCurrentLevel() >= maxlevel ) {
-    	    // stop subdividing, save result
-    	    for (int child=0; child < 8; ++ child) {
-    	        Cursor->ToChild(child);
-    	        leafdata.push_back( std::abs(f(child)) / Cubes->GetVolume(child) );
-    	        // TODO fval is just a test
-    	        //leafdata.push_back( fval );
-    	        leafids.push_back(Cursor->GetLeafId());
-    	        KernelSum += f(child);
-    	        Cursor->ToParent();
+        // Evaluate whether or not furthur splitting is needed
+        if ( std::abs(ksum - parentVal) > tol || level < 5 ) {
+            for (int ichild=0; ichild<8; ++ichild) {
+                Vector3r cp = pos; // Eigen complains about combining these
+                cp += posadd.row(ichild);
+                bool isleaf = EvaluateKids( size, level+1, pos, kvals(ichild) );
+                if (isleaf) {  // Include result in final integral
+//                  Id = curse.GetLeafId()     // VTK
+//                  LeafDict[Id] = vals[child] // VTK
+                    SUM += ksum;
+                    nleaves += 1;
+                }
             }
-    	    return;
+            return false;  // not leaf
         }
-
-        //std::cout << std::abs(kval) << "\t" <<
-        //         std::abs(f.array().abs().sum()) << "\t" << tol << std::endl;
-        for (int child=0; child < 8; ++ child) {
-            //std::cout << "Down the rabit hole " <<std::endl;
-            Cursor->ToChild(child);
-            EvaluateKids( f(child) );
-            //Cursor->ToParent();
-            Cursor->ToSameNode(tcurse);
-        }
-        tcurse->Delete();
-    }
-
-    //--------------------------------------------------------------------------------------
-    //       Class:  KernelV0
-    //      Method:  EvaluateKids
-    //--------------------------------------------------------------------------------------
-    void OctreeGrid::GetPosition( Real* p ) {
-        Real ratio=1.0/(1<<(Cursor->GetCurrentLevel()));
-        //step  = ((Size).array() / std::pow(2.,Cursor->GetCurrentLevel()));
-        p[0]=(Cursor->GetIndex(0)+.5)*ratio*Size[0]+Origin[0] ;//+ .5*step[0];
-        p[1]=(Cursor->GetIndex(1)+.5)*ratio*Size[1]+Origin[1] ;//+ .5*step[1];
-        p[2]=(Cursor->GetIndex(2)+.5)*ratio*Size[2]+Origin[2] ;//+ .5*step[2];
+        return true;       // leaf
     }
 
 } // ----  end of namespace Lemma  ----
