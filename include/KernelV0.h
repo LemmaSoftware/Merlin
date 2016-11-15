@@ -34,6 +34,19 @@
 
 namespace Lemma {
 
+    struct EllipticB {
+        Vector3r  bhat;
+        Vector3r  bhatp;
+        Real      alpha;
+        Real      beta;
+        Complex   eizt;
+        Real      zeta;
+    };
+
+    template <typename T> int sgn(T val) {
+        return (val > T(0)) - (val < T(0));
+    }
+
     /**
      * \ingroup Merlin
      * \brief
@@ -162,7 +175,18 @@ namespace Lemma {
         /**
          *  Returns the kernel value for an input prism
          */
-        Complex f( const Vector3r& r, const Real& volume , const Vector3cr& Bt);
+        Complex f( const Vector3r& r, const Real& volume , const Vector3cr& Ht, const Vector3cr& Hr);
+
+        Complex ComputeV0Cell(const Vector3cr& Bt, const Vector3cr& Br, const Real& vol,
+            const Real& phi);
+
+        Complex ComputeV0Cell(const EllipticB& EBT, const EllipticB& EBR,
+                const Real& sintheta, const Real& phase, const Real& Mn0Abs,
+                const Real& vol);
+
+        EllipticB EllipticFieldRep (const Vector3cr& B, const Vector3r& B0hat);
+
+        Vector3r ComputeMn0(const Real& Porosity, const Vector3r& B0);
 
         void IntegrateOnOctreeGrid( const Real& tolerance , bool vtkOutput=false );
 
@@ -192,26 +216,36 @@ namespace Lemma {
 
         // ====================  DATA MEMBERS  =========================
 
-        Complex                                   SUM;
+        int                                       nleaves;
 
         Real                                      VOLSUM;
-
         Real                                      tol=1e-3;
+        //Real                                        Temperature;
 
-        int                                       nleaves;
+        Complex                                   SUM;
 
         Vector3r   Size;
         Vector3r   Origin;
 
         std::shared_ptr< LayeredEarthEM >         SigmaModel = nullptr;
 
+        std::shared_ptr< FieldPoints >            cpoints;
+
         std::map< std::string , std::shared_ptr< PolygonalWireAntenna > >  TxRx;
 
-        std::vector< std::shared_ptr<EMEarth1D> > EMEarths;
+        std::map< std::string , std::shared_ptr< EMEarth1D > >             EMEarths;
 
         #ifdef LEMMAUSEVTK
         std::map< int, Complex  >                 LeafDict;
         #endif
+
+        // Physical constants and conversion factors
+        static constexpr Real GAMMA = 2.67518e8;                  // MKS units
+        static constexpr Real INVSQRT2 = 0.70710678118654746;
+        static constexpr Real HBAR = 1.05457148e-34;              // m2 kg / s
+        static constexpr Real NH2O = 6.692e28;                    // [m^3]
+        static constexpr Real KB = 1.3805e-23;                    // m^2 kg s-2 K-1
+        static constexpr Real CHI_N = 3.29e-3;                    // MKS units
 
         /** ASCII string representation of the class name */
         static constexpr auto CName = "KernelV0";

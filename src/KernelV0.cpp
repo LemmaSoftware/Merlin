@@ -106,19 +106,34 @@ namespace Lemma {
             bool vtkOutput ) {
 
         // All EM calculations will share same field points
-        auto points = FieldPoints::NewSP();
-            points->SetNumberOfPoints(8);
+        cpoints = FieldPoints::NewSP();
+            cpoints->SetNumberOfPoints(8);
         for (auto tx : Tx) {
             // Set up EMEarth
-            EMEarths.push_back( EMEarth1D::NewSP() );
-                EMEarths.back()->AttachWireAntenna(TxRx[tx]);
-                EMEarths.back()->AttachLayeredEarthEM(SigmaModel);
-                EMEarths.back()->AttachFieldPoints( points );
-         		EMEarths.back()->SetFieldsToCalculate(H);
+            EMEarths[tx] = EMEarth1D::NewSP();
+                EMEarths[tx]->AttachWireAntenna(TxRx[tx]);
+                EMEarths[tx]->AttachLayeredEarthEM(SigmaModel);
+                EMEarths[tx]->AttachFieldPoints( cpoints );
+         		EMEarths[tx]->SetFieldsToCalculate(H);
                 // TODO query for method, altough with flat antennae, this is fastest
-                EMEarths.back()->SetHankelTransformMethod(ANDERSON801);
+                EMEarths[tx]->SetHankelTransformMethod(ANDERSON801);
+                EMEarths[tx]->SetTxRxMode(TX);
         }
-        IntegrateOnOctreeGrid( 1e-5, vtkOutput );
+        for (auto rx : Rx) {
+            if (EMEarths.count(rx)) {
+                EMEarths[rx]->SetTxRxMode(TXRX);
+            } else {
+                EMEarths[rx] = EMEarth1D::NewSP();
+                    EMEarths[rx]->AttachWireAntenna(TxRx[rx]);
+                    EMEarths[rx]->AttachLayeredEarthEM(SigmaModel);
+                    EMEarths[rx]->AttachFieldPoints( cpoints );
+         		    EMEarths[rx]->SetFieldsToCalculate(H);
+                    // TODO query for method, altough with flat antennae, this is fastest
+                    EMEarths[rx]->SetHankelTransformMethod(ANDERSON801);
+                    EMEarths[rx]->SetTxRxMode(RX);
+            }
+        }
+        IntegrateOnOctreeGrid( 1e-7, vtkOutput );
 
     }
 
@@ -130,9 +145,9 @@ namespace Lemma {
 
         this->tol = tolerance;
         //Vector3r                Size;
-            Size << 200,200,200;
+            Size << 200,200,20;
         //Vector3r                Origin;
-            Origin << 0,0,1.0;
+            Origin << 0,0,5.0;
         Vector3r                cpos;  // centre position
             //cpos << 100,100,50;
             cpos = (Size-Origin).array() / 2.;
@@ -185,7 +200,8 @@ namespace Lemma {
         #endif
 
         }
-        std::cout << "\nVOLSUM=" << VOLSUM << "\tActual=" <<  Size(0)*Size(1)*Size(2) << "\tDifference=" << VOLSUM - (Size(0)*Size(1)*Size(2)) <<  std::endl;
+        std::cout << "\nVOLSUM=" << VOLSUM << "\tActual=" <<  Size(0)*Size(1)*Size(2)
+                  << "\tDifference=" << VOLSUM - (Size(0)*Size(1)*Size(2)) <<  std::endl;
         std::cout << "nleaves\t" << nleaves << std::endl;
         std::cout << "KSUM\t" << SUM << std::endl;
 
@@ -195,13 +211,83 @@ namespace Lemma {
     //       Class:  KernelV0
     //      Method:  f
     //--------------------------------------------------------------------------------------
-    Complex KernelV0::f( const Vector3r& r, const Real& volume, const Vector3cr& Bt ) {
-        //std::cout << volume*Bt.norm() << std::endl;
-        //return Complex(volume*Bt.norm());
-        return Complex(volume*Bt.norm());
-        //return Complex(volume);
+    Complex KernelV0::f( const Vector3r& r, const Real& volume, const Vector3cr& Ht, const Vector3cr& Hr ) {
+        return Complex(volume*Ht.dot(Hr));
+        //return ComputeV0Cell(MU0*Ht, MU0*Hr, volume, 1.0);
+    }
 
-//        Vn(ir) = ComputeV0Cell(Bt, Br, volume, 1.0);
+    //--------------------------------------------------------------------------------------
+    //       Class:  KernelV0
+    //      Method:  ComputeV0Cell
+    //--------------------------------------------------------------------------------------
+    Complex KernelV0::ComputeV0Cell(const Vector3cr& Bt,
+                const Vector3cr& Br, const Real& vol, const Real& phi) {
+
+        // Compute the elliptic fields
+        Vector3r B0hat = {1,0,0};
+        Vector3r B0 = 53000 * B0hat; // nT
+        EllipticB EBT = EllipticFieldRep(Bt, B0hat);
+        EllipticB EBR = EllipticFieldRep(Br, B0hat);
+
+        // Compute Mn0
+        Vector3r Mn0 = ComputeMn0(phi, B0);
+        Real Mn0Abs = Mn0.norm();
+
+        Real Taup = 0.020; // s
+        Real Ip = 10;      // A
+
+        // Compute the tipping angle
+        Real sintheta = std::sin(0.5*GAMMA*Ip*Taup*std::abs(EBT.alpha-EBT.beta));
+
+        // Compute phase delay, TODO add transmiiter phase and delay time phase!
+        Real phase = EBR.zeta+EBT.zeta;
+
+        return ComputeV0Cell(EBT, EBR, sintheta, phase, Mn0Abs, vol);
+    }
+
+    //--------------------------------------------------------------------------------------
+    //       Class:  KernelV0
+    //      Method:  ComputeV0Cell
+    //--------------------------------------------------------------------------------------
+    Complex KernelV0::ComputeV0Cell(const EllipticB& EBT, const EllipticB& EBR,
+                const Real& sintheta, const Real& phase, const Real& Mn0Abs,
+                const Real& vol) {
+
+        Vector3r B0hat = {1,0,0};
+        Real Larmor = 2500.*2.*PI;
+
+        // earth response of receiver adjoint field
+        Complex ejztr = std::exp(Complex(0, EBR.zeta + EBT.zeta));
+
+        Complex PhaseTerm = EBR.bhat.dot(EBT.bhat) +
+               (B0hat.dot(EBR.bhat.cross(EBT.bhat) ));
+        return -vol*Complex(0,Larmor)*Mn0Abs*(EBR.alpha+EBR.beta)*ejztr*sintheta*PhaseTerm;
+    }
+
+    Vector3r KernelV0::ComputeMn0(const Real& Porosity, const Vector3r& B0) {
+        Real Temperature = 283; // in K
+        Real chi_n = NH2O*((GAMMA*GAMMA*HBAR*HBAR)/(4.*KB*Temperature));
+        return chi_n*Porosity*B0;
+    }
+
+    //--------------------------------------------------------------------------------------
+    //       Class:  KernelV0
+    //      Method:  ComputeV0Cell
+    //--------------------------------------------------------------------------------------
+    EllipticB KernelV0::EllipticFieldRep (const Vector3cr& B, const Vector3r& B0hat) {
+        EllipticB ElipB = EllipticB();
+        Vector3cr Bperp = B.array() - B0hat.dot(B)*B0hat.array();
+        Real BperpNorm = Bperp.norm();
+        Complex Bp2 = Bperp.transpose() * Bperp;
+        VectorXcr iB0 = Complex(0,1)*B0hat.cast<Complex>().array();
+        ElipB.eizt = std::sqrt(Bp2 / std::abs(Bp2));
+        ElipB.alpha = INVSQRT2*std::sqrt(BperpNorm*BperpNorm + std::abs(Bp2));
+        ElipB.beta = sgn(std::real(iB0.dot(Bperp.cross(Bperp.conjugate())))) *
+                (INVSQRT2)*std::sqrt(std::abs(BperpNorm*BperpNorm-std::abs(Bp2)));
+        ElipB.bhat = ((Real)1./ElipB.alpha)*(((Real)1./ElipB.eizt)*Bperp.array()).real().array();
+        ElipB.bhatp = B0hat.cross(ElipB.bhat);
+        ElipB.zeta = std::real(std::log(ElipB.eizt)/Complex(0,1));
+        return ElipB;
     }
 
     //--------------------------------------------------------------------------------------
@@ -233,26 +319,39 @@ namespace Lemma {
                   step[0], step[1], step[2] ).finished();
 
         VectorXcr kvals(8);       // individual kernel vals
-        FieldPoints* cpoints = EMEarths[0]->GetFieldPoints();
-            cpoints->ClearFields();
+        cpoints->ClearFields();
         for (int ichild=0; ichild<8; ++ichild) {
             Vector3r cp = pos;    // Eigen complains about combining these
             cp += posadd.row(ichild);
             cpoints->SetLocation( ichild, cp );
         }
 
-        Vector3Xcr Bt;
+        Eigen::Matrix<Complex, 3, 8> Ht = Eigen::Matrix<Complex, 3, 8>::Zero();
+        Eigen::Matrix<Complex, 3, 8> Hr = Eigen::Matrix<Complex, 3, 8>::Zero();
         //Eigen::Matrix< Complex, 8, 3 > Bt;
         for ( auto EMCalc : EMEarths ) {
             //EMCalc->GetFieldPoints()->ClearFields();
-            EMCalc->CalculateWireAntennaFields();
-            Bt = EMCalc->GetFieldPoints()->GetHfield(0);
+            EMCalc.second->CalculateWireAntennaFields();
+            switch (EMCalc.second->GetTxRxMode()) {
+                case TX:
+                    Ht += EMCalc.second->GetFieldPoints()->GetHfield(0);
+                    break;
+                case RX:
+                    Hr += EMCalc.second->GetFieldPoints()->GetHfield(0);
+                    break;
+                case TXRX:
+                    Ht += EMCalc.second->GetFieldPoints()->GetHfield(0);
+                    Hr += EMCalc.second->GetFieldPoints()->GetHfield(0);
+                    break;
+                default:
+                    break;
+            }
         }
 
         for (int ichild=0; ichild<8; ++ichild) {
             Vector3r cp = pos;    // Eigen complains about combining these
             cp += posadd.row(ichild);
-            kvals(ichild) = f(cp, vol, Bt.col(ichild));
+            kvals(ichild) = f(cp, vol, Ht.col(ichild), Hr.col(ichild));
         }
 
         Complex ksum = kvals.sum();     // Kernel sum
@@ -304,25 +403,38 @@ namespace Lemma {
                   step[0], step[1], step[2] ).finished();
 
         VectorXcr kvals(8);                     // individual kernel vals
-        FieldPoints* cpoints = EMEarths[0]->GetFieldPoints();
-            cpoints->ClearFields();
+        cpoints->ClearFields();
         for (int ichild=0; ichild<8; ++ichild) {
             Vector3r cp = pos;    // Eigen complains about combining these
             cp += posadd.row(ichild);
             cpoints->SetLocation( ichild, cp );
         }
 
-        Vector3Xcr Bt;
+        Eigen::Matrix<Complex, 3, 8> Ht = Eigen::Matrix<Complex, 3, 8>::Zero();
+        Eigen::Matrix<Complex, 3, 8> Hr = Eigen::Matrix<Complex, 3, 8>::Zero();
         for ( auto EMCalc : EMEarths ) {
             //EMCalc->GetFieldPoints()->ClearFields();
-            EMCalc->CalculateWireAntennaFields();
-            Bt = EMCalc->GetFieldPoints()->GetHfield(0);
+            EMCalc.second->CalculateWireAntennaFields();
+            switch (EMCalc.second->GetTxRxMode()) {
+                case TX:
+                    Ht += EMCalc.second->GetFieldPoints()->GetHfield(0);
+                    break;
+                case RX:
+                    Hr += EMCalc.second->GetFieldPoints()->GetHfield(0);
+                    break;
+                case TXRX:
+                    Ht += EMCalc.second->GetFieldPoints()->GetHfield(0);
+                    Hr += EMCalc.second->GetFieldPoints()->GetHfield(0);
+                    break;
+                default:
+                    break;
+            }
         }
 
         for (int ichild=0; ichild<8; ++ichild) {
             Vector3r cp = pos; // Eigen complains about combining these
             cp += posadd.row(ichild);
-            kvals(ichild) = f(cp, vol, Bt.col(ichild));
+            kvals(ichild) = f(cp, vol, Ht.col(ichild), Hr.col(ichild));
         }
 
         Complex ksum = kvals.sum();     // Kernel sum
@@ -333,10 +445,12 @@ namespace Lemma {
                 curse->ToChild(ichild);
                 Vector3r cp = pos; // Eigen complains about combining these
                 cp += posadd.row(ichild);
-                // Testing for position via alternative means
-                //Real p[3];
-                //GetPosition(curse, p);
-                //std::cout << cp[0] << "\t" << p[0] << "\t" << cp[1] << "\t" << p[1] << "\t" << cp[2] << "\t" << p[2] << "\t" <<  vol<< std::endl;
+                /* Test for position via alternative means
+                Real p[3];
+                GetPosition(curse, p);
+                std::cout << cp[0] << "\t" << p[0] << "\t" << cp[1] << "\t" << p[1]
+                          << "\t" << cp[2] << "\t" << p[2] << "\t" <<  vol<< std::endl;
+                */
                 bool isleaf = EvaluateKids2( size, level+1, cp, kvals(ichild), oct, curse );
                 if (isleaf) {  // Include result in final integral
                     LeafDict[curse->GetLeafId()] = kvals(ichild);       // VTK

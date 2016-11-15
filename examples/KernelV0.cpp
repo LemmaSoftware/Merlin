@@ -31,7 +31,7 @@ int main() {
 
     // Transmitter loops
     auto Tx1 = CircularLoop(60, 15, 100, 100);
-    auto Tx2 = CircularLoop(60, 15, 55, 50);
+    auto Tx2 = CircularLoop(60, 15, 100, 120);
     //auto Tx1 = CircularLoop(60, 15, 0, 0); // was 60
 
     auto Kern = KernelV0::NewSP();
@@ -43,7 +43,7 @@ int main() {
     // We could, I suppose, take the earth model in here? For non-linear that
     // may be more natural to work with?
     std::vector<std::string> tx = {std::string("Coil 1")};
-    std::vector<std::string> rx = {std::string("Coil 1")};
+    std::vector<std::string> rx = {std::string("Coil 2")};
     Kern->CalculateK0( tx, rx , true ); //, false );
     //Kern->CalculateK0( "Coil 1", "Coil 1" );
 
