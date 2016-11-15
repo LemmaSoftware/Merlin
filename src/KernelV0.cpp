@@ -118,7 +118,7 @@ namespace Lemma {
                 // TODO query for method, altough with flat antennae, this is fastest
                 EMEarths.back()->SetHankelTransformMethod(ANDERSON801);
         }
-        IntegrateOnOctreeGrid( 1e-1, vtkOutput );
+        IntegrateOnOctreeGrid( 1e-5, vtkOutput );
 
     }
 
@@ -130,9 +130,9 @@ namespace Lemma {
 
         this->tol = tolerance;
         //Vector3r                Size;
-            Size << 200,200,100;
+            Size << 200,200,200;
         //Vector3r                Origin;
-            Origin << 0,0,0;
+            Origin << 0,0,1.0;
         Vector3r                cpos;  // centre position
             //cpos << 100,100,50;
             cpos = (Size-Origin).array() / 2.;
@@ -200,6 +200,8 @@ namespace Lemma {
         //return Complex(volume*Bt.norm());
         return Complex(volume*Bt.norm());
         //return Complex(volume);
+
+//        Vn(ir) = ComputeV0Cell(Bt, Br, volume, 1.0);
     }
 
     //--------------------------------------------------------------------------------------
@@ -208,6 +210,9 @@ namespace Lemma {
     //--------------------------------------------------------------------------------------
     bool KernelV0::EvaluateKids( const Vector3r& size, const int& level, const Vector3r& cpos,
         const Complex& parentVal ) {
+
+        std::cout << "\r" << (int)(1e2*VOLSUM/(Size[0]*Size[1]*Size[2])) << "\t" << nleaves;
+        std::cout.flush();
 
         // Next level step, interested in one level below
         // bitshift requires one extra, faster than, and equivalent to std::pow(2, level+1)
@@ -277,8 +282,8 @@ namespace Lemma {
     bool KernelV0::EvaluateKids2( const Vector3r& size, const int& level, const Vector3r& cpos,
         const Complex& parentVal, vtkHyperOctree* oct, vtkHyperOctreeCursor* curse) {
 
-        //std::cout << "\rlevel " << level << "\t" << nleaves;
-        //std::cout.flush();
+        std::cout << "\r" << (int)(1e2*VOLSUM/(Size[0]*Size[1]*Size[2])) << "\t" << nleaves;
+        std::cout.flush();
 
         // Next level step, interested in one level below
         // bitshift requires one extra, faster than, and equivalent to std::pow(2, level+1)
@@ -328,6 +333,7 @@ namespace Lemma {
                 curse->ToChild(ichild);
                 Vector3r cp = pos; // Eigen complains about combining these
                 cp += posadd.row(ichild);
+                // Testing for position via alternative means
                 //Real p[3];
                 //GetPosition(curse, p);
                 //std::cout << cp[0] << "\t" << p[0] << "\t" << cp[1] << "\t" << p[1] << "\t" << cp[2] << "\t" << p[2] << "\t" <<  vol<< std::endl;
@@ -345,6 +351,10 @@ namespace Lemma {
         return true;       // leaf
     }
 
+    //--------------------------------------------------------------------------------------
+    //       Class:  KernelV0
+    //      Method:  GetPosition
+    //--------------------------------------------------------------------------------------
     void KernelV0::GetPosition( vtkHyperOctreeCursor* Cursor, Real* p ) {
         Real ratio=1.0/(1<<(Cursor->GetCurrentLevel()));
         //step  = ((Size).array() / std::pow(2.,Cursor->GetCurrentLevel()));
