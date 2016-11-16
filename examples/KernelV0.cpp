@@ -33,8 +33,8 @@ int main() {
         earth->SetMagneticFieldIncDecMag( 67, 0, 52750, NANOTESLA );
 
     // Transmitter loops
-    auto Tx1 = CircularLoop(65, 15, 100, 100);
-    auto Tx2 = CircularLoop(65, 15, 100, 120);
+    auto Tx1 = CircularLoop(31, 15, 100, 100);
+    auto Tx2 = CircularLoop(31, 15, 100, 120);
     //auto Tx1 = CircularLoop(60, 15, 0, 0); // was 60
 
     auto Kern = KernelV0::NewSP();
@@ -43,20 +43,19 @@ int main() {
         Kern->SetLayeredEarthEM( earth );
         // std::cout << *Kern << std::endl;
 
-        // Kern->SetPulseDuration();
-        // Kern->SetPulseCurrent();
-        // Kern->SetPulseMoments();
-        // Kern->SetDepthLayers();
-        // Kern->SetIntegrationOrigin();
-        // Kern->SetIntegrationSize();
+        Kern->SetIntegrationSize( (Vector3r() << 200,200,2).finished() );
+        Kern->SetIntegrationOrigin( (Vector3r() << 0,0,15).finished() );
+        Kern->SetTolerance( 1e-11 );
 
+        Kern->SetPulseDuration(0.020);
+        Kern->SetPulseCurrent( VectorXr::LinSpaced( 20, .01, 200 )  ); // nbins, low, high
+        Kern->SetDepthLayerInterfaces( VectorXr::LinSpaced( 20, .5, 50 ) );
 
     // We could, I suppose, take the earth model in here? For non-linear that
     // may be more natural to work with?
     std::vector<std::string> tx = {std::string("Coil 1")};
     std::vector<std::string> rx = {std::string("Coil 1")};
-    Kern->CalculateK0( tx, rx , true ); //, false );
-    //Kern->CalculateK0( "Coil 1", "Coil 1" );
+    Kern->CalculateK0( tx, rx, true );
 
 }
 
@@ -75,7 +74,7 @@ std::shared_ptr<Lemma::PolygonalWireAntenna> CircularLoop ( int nd, Real Radius,
     Tx1->SetCurrent(1.);
     Tx1->SetNumberOfTurns(1);
     Tx1->SetNumberOfFrequencies(1);
-    Tx1->SetFrequency(0,2500);
+    Tx1->SetFrequency(0,2246);
 
     return Tx1;
 }

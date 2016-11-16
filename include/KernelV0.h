@@ -135,6 +135,30 @@ namespace Lemma {
         }		// -----  end of method KernelV0::set_SigmaModel  -----
 
         /**
+         *
+         */
+        inline void SetIntegrationSize ( const Vector3r& size ) {
+            Size = size;
+            return ;
+        }		// -----  end of method KernelV0::SetIntegrationSize  -----
+
+        /**
+         *
+         */
+        inline void SetIntegrationOrigin ( const Vector3r& origin ) {
+            Origin = origin;
+            return ;
+        }		// -----  end of method KernelV0::SetIntegrationOrigin  -----
+
+        /**
+         *
+         */
+        inline void SetPulseCurrent ( const VectorXr& Amps ) {
+            PulseI = Amps;
+            return ;
+        }		// -----  end of method KernelV0::SetIntegrationOrigin  -----
+
+        /**
          *   Assign transmiter coils
          */
         inline void PushCoil( const std::string& label, std::shared_ptr<PolygonalWireAntenna> ant ) {
@@ -158,8 +182,24 @@ namespace Lemma {
          *  Sets the temperature, which has implications in calculation of \f$ M_N^{(0)}\f$. Units in
          *  Kelvin.
          */
-        void SetTemperature(const Real& tempK) {
+        inline void SetTemperature(const Real& tempK) {
             Temperature = tempK;
+        }
+
+        /**
+         *  Sets the tolerance to use for making the adaptive mesh
+         *
+         */
+        inline void SetTolerance(const Real& ttol) {
+            tol = ttol;
+        }
+
+        inline void SetPulseDuration(const Real& taup) {
+            Taup = taup;
+        }
+
+        inline void SetDepthLayerInterfaces( const VectorXr& iface ){
+            Interfaces = iface;
         }
 
         // ====================  INQUIRY       =======================
@@ -196,7 +236,7 @@ namespace Lemma {
 
         Vector3r ComputeMn0(const Real& Porosity, const Vector3r& B0);
 
-        void IntegrateOnOctreeGrid( const Real& tolerance , bool vtkOutput=false );
+        Complex IntegrateOnOctreeGrid( const int& ilay, const int& iq, bool vtkOutput=false );
 
         /**
          *  Recursive call to integrate a function on an adaptive Octree Grid.
@@ -225,15 +265,23 @@ namespace Lemma {
         // ====================  DATA MEMBERS  =========================
 
         int                                       nleaves;
+        int                                       minLevel=3;
+        int                                       maxLevel=10;
 
         Real                                      VOLSUM;
-        Real                                      tol=1e-3;
+        Real                                      tol=1e-11;
         Real                                      Temperature=283.;
+        Real                                      Taup = .020;  // Sec
+        Real                                      Ip = 10;      // Amps
+        Real                                      Larmor;
 
         Complex                                   SUM;
 
-        Vector3r   Size;
-        Vector3r   Origin;
+        Vector3r                                  Size;
+        Vector3r                                  Origin;
+
+        VectorXr   PulseI;
+        VectorXr   Interfaces;
 
         std::shared_ptr< LayeredEarthEM >         SigmaModel = nullptr;
 
@@ -245,6 +293,7 @@ namespace Lemma {
 
         #ifdef LEMMAUSEVTK
         std::map< int, Complex  >                 LeafDict;
+        std::map< int, int     >                  LeafDictIdx;
         std::map< int, Real     >                 LeafDictErr;
         #endif
 

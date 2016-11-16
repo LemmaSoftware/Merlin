@@ -105,6 +105,9 @@ namespace Lemma {
     void KernelV0::CalculateK0 (const std::vector< std::string>& Tx, const std::vector<std::string >& Rx,
             bool vtkOutput ) {
 
+        // Set up
+        Larmor = SigmaModel->GetMagneticFieldMagnitude()*GAMMA; // in rad  2246.*2.*PI;
+
         // All EM calculations will share same field points
         cpoints = FieldPoints::NewSP();
             cpoints->SetNumberOfPoints(8);
@@ -133,24 +136,30 @@ namespace Lemma {
                     EMEarths[rx]->SetTxRxMode(RX);
             }
         }
-        IntegrateOnOctreeGrid( 1e-13, vtkOutput );
+
+        std::cout << "Calculating K0 kernel\n";
+        MatrixXcr Kern = MatrixXcr::Zero( Interfaces.size() - 1, PulseI.size() );
+        for (int ilay=0; ilay< Interfaces.size()-1; ++ilay) {
+            for (int iq=0; iq< PulseI.size()-1; ++iq) {
+                std::cout << "Layer " << ilay << " q " << iq << std::endl;
+                Size(2) = Interfaces(ilay+1) - Interfaces(ilay);
+                Origin(2) = Interfaces(ilay);
+                Ip = PulseI(iq);
+                Kern(ilay, iq) = IntegrateOnOctreeGrid( ilay, iq, vtkOutput );
+            }
+        }
+        std::cout << "\rFinished KERNEL\n";
+        std::cout << Kern << std::endl;
+        //IntegrateOnOctreeGrid( vtkOutput );
     }
 
     //--------------------------------------------------------------------------------------
     //       Class:  KernelV0
     //      Method:  IntegrateOnOctreeGrid
     //--------------------------------------------------------------------------------------
-    void KernelV0::IntegrateOnOctreeGrid( const Real& tolerance, bool vtkOutput) {
+    Complex KernelV0::IntegrateOnOctreeGrid( const int& ilay, const int& iq, bool vtkOutput) {
 
-        this->tol = tolerance;
-        //Vector3r                Size;
-            Size << 200,200,2;
-        //Vector3r                Origin;
-            Origin << 0,0,5.0;
-        Vector3r                cpos;  // centre position
-            //cpos << 100,100,50;
-            cpos = (Size-Origin).array() / 2.;
-        int                     maxlevel;
+        Vector3r cpos = (Size-Origin).array() / 2.;
 
         SUM = 0;
         VOLSUM = 0;
@@ -184,30 +193,33 @@ namespace Lemma {
                 kid->SetNumberOfComponents(1);
                 kid->SetName("ID");
                 kid->SetNumberOfTuples( oct->GetNumberOfLeaves() );
-            //vtkDoubleArray* kerr = vtkDoubleArray::New();
-            //    kerr->SetNumberOfComponents(1);
-            //    kerr->SetName("Error");
+            vtkIntArray* kerr = vtkIntArray::New();
+                kerr->SetNumberOfComponents(1);
+                kerr->SetName("nleaf");
 
             for (auto leaf : LeafDict) {
                 kr->InsertTuple1( leaf.first, std::real(leaf.second) );
                 ki->InsertTuple1( leaf.first, std::imag(leaf.second) );
+                km->InsertTuple1( leaf.first, std::abs(leaf.second) );
                 kid->InsertTuple1( leaf.first, leaf.first );
             }
 
-            //for (auto leaf : LeafDictErr) {
-            //    kerr->InsertTuple1( leaf.first, std::imag(leaf.second) );
-            //}
+            for (auto leaf : LeafDictIdx) {
+                kerr->InsertTuple1( leaf.first, leaf.second );
+            }
 
             oct->GetLeafData()->AddArray(kr);
             oct->GetLeafData()->AddArray(ki);
             oct->GetLeafData()->AddArray(km);
             oct->GetLeafData()->AddArray(kid);
-            //oct->GetLeafData()->AddArray(kerr);
+            oct->GetLeafData()->AddArray(kerr);
 
             auto write = vtkXMLHyperOctreeWriter::New();
                 //write.SetDataModeToAscii()
                 write->SetInputData(oct);
-                write->SetFileName("octree.vto");
+                std::string fname = std::string("octree-") + to_string(ilay)
+                                  + std::string("-") + to_string(iq) + std::string(".vto");
+                write->SetFileName(fname.c_str());
                 write->Write();
                 write->Delete();
 
@@ -228,6 +240,7 @@ namespace Lemma {
         std::cout << "nleaves\t" << nleaves << std::endl;
         std::cout << "KSUM\t" << SUM << std::endl;
 
+        return SUM;
     }
 
     //--------------------------------------------------------------------------------------
@@ -258,9 +271,6 @@ namespace Lemma {
         Vector3r Mn0 = ComputeMn0(phi, B0);
         Real Mn0Abs = Mn0.norm();
 
-        Real Taup = 0.020; // s
-        Real Ip   = 10;      // A
-
         // Compute the tipping angle
         Real sintheta = std::sin(0.5*GAMMA*Ip*Taup*std::abs(EBT.alpha-EBT.beta));
 
@@ -279,7 +289,6 @@ namespace Lemma {
                 const Real& vol) {
 
         Vector3r B0hat = {1,0,0};
-        Real Larmor = 2500.*2.*PI;
 
         // earth response of receiver adjoint field
         Complex ejztr = std::exp(Complex(0, EBR.zeta + EBT.zeta));
@@ -384,7 +393,7 @@ namespace Lemma {
 
         Complex ksum = kvals.sum();     // Kernel sum
         // Evaluate whether or not furthur splitting is needed
-        if ( std::abs(ksum - parentVal) > tol || level < 2 ) {
+        if ( std::abs(ksum - parentVal) > tol || level < minLevel && level < maxLevel ) {
             for (int ichild=0; ichild<8; ++ichild) {
                 Vector3r cp = pos; // Eigen complains about combining these
                 cp += posadd.row(ichild);
@@ -467,7 +476,8 @@ namespace Lemma {
 
         Complex ksum = kvals.sum();     // Kernel sum
         // Evaluate whether or not furthur splitting is needed
-        if ( std::abs(ksum - parentVal) > tol || level < 2 ) {
+        Real err = std::abs(ksum - parentVal);
+        if ( std::abs(ksum - parentVal) > tol || level < minLevel && level < maxLevel ) {
             oct->SubdivideLeaf(curse);
             for (int ichild=0; ichild<8; ++ichild) {
                 curse->ToChild(ichild);
@@ -482,6 +492,7 @@ namespace Lemma {
                 bool isleaf = EvaluateKids2( size, level+1, cp, kvals(ichild), oct, curse );
                 if (isleaf) {  // Include result in final integral
                     LeafDict[curse->GetLeafId()] = kvals(ichild);       // VTK
+                    LeafDictIdx[curse->GetLeafId()] = nleaves;          // VTK
                     SUM += ksum;
                     VOLSUM += 8*vol;
                     nleaves += 1;
