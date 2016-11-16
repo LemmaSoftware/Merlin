@@ -133,8 +133,7 @@ namespace Lemma {
                     EMEarths[rx]->SetTxRxMode(RX);
             }
         }
-        IntegrateOnOctreeGrid( 1e-7, vtkOutput );
-
+        IntegrateOnOctreeGrid( 1e-13, vtkOutput );
     }
 
     //--------------------------------------------------------------------------------------
@@ -145,7 +144,7 @@ namespace Lemma {
 
         this->tol = tolerance;
         //Vector3r                Size;
-            Size << 200,200,20;
+            Size << 200,200,2;
         //Vector3r                Origin;
             Origin << 0,0,5.0;
         Vector3r                cpos;  // centre position
@@ -177,12 +176,33 @@ namespace Lemma {
                 ki->SetNumberOfComponents(1);
                 ki->SetName("Im($K_0$)");
                 ki->SetNumberOfTuples( oct->GetNumberOfLeaves() );
+            vtkDoubleArray* km = vtkDoubleArray::New();
+                km->SetNumberOfComponents(1);
+                km->SetName("mod($K_0$)");
+                km->SetNumberOfTuples( oct->GetNumberOfLeaves() );
+            vtkIntArray* kid = vtkIntArray::New();
+                kid->SetNumberOfComponents(1);
+                kid->SetName("ID");
+                kid->SetNumberOfTuples( oct->GetNumberOfLeaves() );
+            //vtkDoubleArray* kerr = vtkDoubleArray::New();
+            //    kerr->SetNumberOfComponents(1);
+            //    kerr->SetName("Error");
+
             for (auto leaf : LeafDict) {
                 kr->InsertTuple1( leaf.first, std::real(leaf.second) );
                 ki->InsertTuple1( leaf.first, std::imag(leaf.second) );
+                kid->InsertTuple1( leaf.first, leaf.first );
             }
+
+            //for (auto leaf : LeafDictErr) {
+            //    kerr->InsertTuple1( leaf.first, std::imag(leaf.second) );
+            //}
+
             oct->GetLeafData()->AddArray(kr);
             oct->GetLeafData()->AddArray(ki);
+            oct->GetLeafData()->AddArray(km);
+            oct->GetLeafData()->AddArray(kid);
+            //oct->GetLeafData()->AddArray(kerr);
 
             auto write = vtkXMLHyperOctreeWriter::New();
                 //write.SetDataModeToAscii()
@@ -191,8 +211,11 @@ namespace Lemma {
                 write->Write();
                 write->Delete();
 
+            //kerr->Delete();
+            kid->Delete();
             kr->Delete();
             ki->Delete();
+            km->Delete();
             curse->Delete();
             oct->Delete();
         #else
@@ -212,8 +235,8 @@ namespace Lemma {
     //      Method:  f
     //--------------------------------------------------------------------------------------
     Complex KernelV0::f( const Vector3r& r, const Real& volume, const Vector3cr& Ht, const Vector3cr& Hr ) {
-        return Complex(volume*Ht.dot(Hr));
-        //return ComputeV0Cell(MU0*Ht, MU0*Hr, volume, 1.0);
+        //return Complex(volume*Ht.dot(Hr));
+        return ComputeV0Cell(MU0*Ht, MU0*Hr, volume, 1.0);
     }
 
     //--------------------------------------------------------------------------------------
@@ -224,8 +247,10 @@ namespace Lemma {
                 const Vector3cr& Br, const Real& vol, const Real& phi) {
 
         // Compute the elliptic fields
-        Vector3r B0hat = {1,0,0};
-        Vector3r B0 = 53000 * B0hat; // nT
+        Vector3r B0hat = SigmaModel->GetMagneticFieldUnitVector();
+        Vector3r B0 = SigmaModel->GetMagneticField();
+
+        // Elliptic representation
         EllipticB EBT = EllipticFieldRep(Bt, B0hat);
         EllipticB EBR = EllipticFieldRep(Br, B0hat);
 
@@ -234,7 +259,7 @@ namespace Lemma {
         Real Mn0Abs = Mn0.norm();
 
         Real Taup = 0.020; // s
-        Real Ip = 10;      // A
+        Real Ip   = 10;      // A
 
         // Compute the tipping angle
         Real sintheta = std::sin(0.5*GAMMA*Ip*Taup*std::abs(EBT.alpha-EBT.beta));
@@ -264,8 +289,11 @@ namespace Lemma {
         return -vol*Complex(0,Larmor)*Mn0Abs*(EBR.alpha+EBR.beta)*ejztr*sintheta*PhaseTerm;
     }
 
+    //--------------------------------------------------------------------------------------
+    //       Class:  KernelV0
+    //      Method:  ComputeV0Cell
+    //--------------------------------------------------------------------------------------
     Vector3r KernelV0::ComputeMn0(const Real& Porosity, const Vector3r& B0) {
-        Real Temperature = 283; // in K
         Real chi_n = NH2O*((GAMMA*GAMMA*HBAR*HBAR)/(4.*KB*Temperature));
         return chi_n*Porosity*B0;
     }

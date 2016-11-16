@@ -154,6 +154,14 @@ namespace Lemma {
         void CalculateK0 (const std::vector< std::string >& tx, const std::vector< std::string >& rx,
                 bool vtkOutput=false );
 
+        /**
+         *  Sets the temperature, which has implications in calculation of \f$ M_N^{(0)}\f$. Units in
+         *  Kelvin.
+         */
+        void SetTemperature(const Real& tempK) {
+            Temperature = tempK;
+        }
+
         // ====================  INQUIRY       =======================
         /**
          *  Returns the name of the underlying class, similiar to Python's type
@@ -220,7 +228,7 @@ namespace Lemma {
 
         Real                                      VOLSUM;
         Real                                      tol=1e-3;
-        //Real                                        Temperature;
+        Real                                      Temperature=283.;
 
         Complex                                   SUM;
 
@@ -237,6 +245,7 @@ namespace Lemma {
 
         #ifdef LEMMAUSEVTK
         std::map< int, Complex  >                 LeafDict;
+        std::map< int, Real     >                 LeafDictErr;
         #endif
 
         // Physical constants and conversion factors

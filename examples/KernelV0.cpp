@@ -28,10 +28,13 @@ int main() {
 		earth->SetNumberOfLayers(3);
 		earth->SetLayerConductivity( (VectorXcr(3) << Complex(0.,0), Complex(1./50.,0), Complex(1./100.)).finished() );
 		earth->SetLayerThickness( (VectorXr(1) << 10).finished() );
+        // Set mag field info
+        // From NOAA, Laramie WY, June 9 2016, aligned with mag. north
+        earth->SetMagneticFieldIncDecMag( 67, 0, 52750, NANOTESLA );
 
     // Transmitter loops
-    auto Tx1 = CircularLoop(60, 15, 100, 100);
-    auto Tx2 = CircularLoop(60, 15, 100, 120);
+    auto Tx1 = CircularLoop(65, 15, 100, 100);
+    auto Tx2 = CircularLoop(65, 15, 100, 120);
     //auto Tx1 = CircularLoop(60, 15, 0, 0); // was 60
 
     auto Kern = KernelV0::NewSP();
@@ -40,25 +43,34 @@ int main() {
         Kern->SetLayeredEarthEM( earth );
         // std::cout << *Kern << std::endl;
 
+        // Kern->SetPulseDuration();
+        // Kern->SetPulseCurrent();
+        // Kern->SetPulseMoments();
+        // Kern->SetDepthLayers();
+        // Kern->SetIntegrationOrigin();
+        // Kern->SetIntegrationSize();
+
+
     // We could, I suppose, take the earth model in here? For non-linear that
     // may be more natural to work with?
     std::vector<std::string> tx = {std::string("Coil 1")};
-    std::vector<std::string> rx = {std::string("Coil 2")};
+    std::vector<std::string> rx = {std::string("Coil 1")};
     Kern->CalculateK0( tx, rx , true ); //, false );
     //Kern->CalculateK0( "Coil 1", "Coil 1" );
 
 }
 
 std::shared_ptr<Lemma::PolygonalWireAntenna> CircularLoop ( int nd, Real Radius, Real Offsetx, Real Offsety ) {
+
     auto Tx1 = Lemma::PolygonalWireAntenna::NewSP();
          Tx1->SetNumberOfPoints(nd);
 
     VectorXr range = VectorXr::LinSpaced(nd, 0, 2*PI);
     int ii;
-    for (ii=0; ii<nd-1; ++ii) {
+    for (ii=0; ii<nd; ++ii) {
         Tx1->SetPoint(ii, Vector3r(Offsetx+Radius*std::cos(range(ii)), Offsety+Radius*std::sin(range(ii)),  -1e-3));
     }
-    Tx1->SetPoint(ii, Vector3r(Offsetx+Radius*1, Offsety,  -1e-3));
+    //Tx1->SetPoint(ii, Vector3r(Offsetx+Radius*1, Offsety,  -1e-3));
 
     Tx1->SetCurrent(1.);
     Tx1->SetNumberOfTurns(1);
