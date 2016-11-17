@@ -45,7 +45,7 @@ int main() {
 
         Kern->SetIntegrationSize( (Vector3r() << 200,200,2).finished() );
         Kern->SetIntegrationOrigin( (Vector3r() << 0,0,15).finished() );
-        Kern->SetTolerance( 1e-11 );
+        Kern->SetTolerance( 1e-13 );
 
         Kern->SetPulseDuration(0.020);
         Kern->SetPulseCurrent( VectorXr::LinSpaced( 20, .01, 200 )  ); // nbins, low, high

@@ -149,7 +149,10 @@ namespace Lemma {
             }
         }
         std::cout << "\rFinished KERNEL\n";
-        std::cout << Kern << std::endl;
+        std::cout << "real\n";
+        std::cout << Kern.real() << std::endl;
+        std::cout << "imag\n";
+        std::cout << Kern.imag() << std::endl;
         //IntegrateOnOctreeGrid( vtkOutput );
     }
 
