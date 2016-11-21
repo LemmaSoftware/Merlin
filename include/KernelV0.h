@@ -248,7 +248,7 @@ namespace Lemma {
          *  @param[in] level gives the current level of the octree grid, call with 0 initially
          *  @param[in] cpos is the centre position of the parent cuboid
          */
-        bool EvaluateKids(  const Vector3r& size, const int& level, const Vector3r& cpos,
+        void EvaluateKids(  const Vector3r& size, const int& level, const Vector3r& cpos,
                             const Complex& parentVal );
 
         #ifdef LEMMAUSEVTK
@@ -256,7 +256,7 @@ namespace Lemma {
          *  Same functionality as @see EvaluateKids, but includes generation of a VTK
          *  HyperOctree, which is useful for visualization.
          */
-        bool EvaluateKids2(  const Vector3r& size, const int& level, const Vector3r& cpos,
+        void EvaluateKids2(  const Vector3r& size, const int& level, const Vector3r& cpos,
                             const Complex& parentVal, vtkHyperOctree* octree, vtkHyperOctreeCursor* curse );
 
         void GetPosition( vtkHyperOctreeCursor* Cursor, Real* p );

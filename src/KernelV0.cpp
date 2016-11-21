@@ -337,7 +337,7 @@ namespace Lemma {
     //       Class:  KernelV0
     //      Method:  EvaluateKids
     //--------------------------------------------------------------------------------------
-    bool KernelV0::EvaluateKids( const Vector3r& size, const int& level, const Vector3r& cpos,
+    void KernelV0::EvaluateKids( const Vector3r& size, const int& level, const Vector3r& cpos,
         const Complex& parentVal ) {
 
         std::cout << "\r" << (int)(1e2*VOLSUM/(Size[0]*Size[1]*Size[2])) << "\t" << nleaves;
@@ -346,9 +346,7 @@ namespace Lemma {
         // Next level step, interested in one level below
         // bitshift requires one extra, faster than, and equivalent to std::pow(2, level+1)
         Vector3r step  = size.array() / (Real)(1 << (level+1) );
-        Vector3r step2 = size.array() / (Real)(1 << (level+2) );
-
-        Real vol = (step2(0)*step2(1)*step2(2));     // volume of each child
+        Real vol = (step(0)*step(1)*step(2));     // volume of each child
 
         Vector3r pos =  cpos - step/2.;
         Eigen::Matrix<Real, 8, 3> posadd = (Eigen::Matrix<Real, 8, 3>() <<
@@ -403,17 +401,15 @@ namespace Lemma {
             for (int ichild=0; ichild<8; ++ichild) {
                 Vector3r cp = pos; // Eigen complains about combining these
                 cp += posadd.row(ichild);
-                bool isleaf = EvaluateKids( size, level+1, cp, kvals(ichild) );
-                if (isleaf) {      // Include result in final integral
-                    SUM += ksum;
-                    VOLSUM += 8.*vol;
-                    nleaves += 1;
-                }
+                EvaluateKids( size, level+1, cp, kvals(ichild) );
             }
-            return false;  // not leaf
+            return; // not leaf
         }
         // Save here instead?
-        return true;       // leaf
+        SUM += ksum;
+        VOLSUM += 8.*vol;
+        nleaves += 1;
+        return;     // is leaf
     }
 
     #ifdef LEMMAUSEVTK
@@ -421,7 +417,7 @@ namespace Lemma {
     //       Class:  KernelV0
     //      Method:  EvaluateKids2 -- same as Evaluate Kids, but include VTK octree generation
     //--------------------------------------------------------------------------------------
-    bool KernelV0::EvaluateKids2( const Vector3r& size, const int& level, const Vector3r& cpos,
+    void KernelV0::EvaluateKids2( const Vector3r& size, const int& level, const Vector3r& cpos,
         const Complex& parentVal, vtkHyperOctree* oct, vtkHyperOctreeCursor* curse) {
 
         std::cout << "\r" << (int)(1e2*VOLSUM/(Size[0]*Size[1]*Size[2])) << "\t" << nleaves;
@@ -431,9 +427,6 @@ namespace Lemma {
         // bitshift requires one extra, faster than, and equivalent to std::pow(2, level+1)
         Vector3r step  = size.array() / (Real)(1 << (level+1) );
         Real vol = (step(0)*step(1)*step(2));         // volume of each child
-
-        Vector3r step2 = size.array() / (Real)(1 << (level+2) );
-        Real vol2 = (step2(0)*step2(1)*step2(2));     // volume of each child
 
         Vector3r pos =  cpos - step/2.;
         Eigen::Matrix<Real, 8, 3> posadd = (Eigen::Matrix<Real, 8, 3>() <<
@@ -483,9 +476,8 @@ namespace Lemma {
 
         Complex ksum = kvals.sum();     // Kernel sum
         // Evaluate whether or not furthur splitting is needed
-        if ( std::abs(ksum-parentVal) > tol ) { // || level < minLevel && level < maxLevel ) {
+        if ( std::abs(ksum - parentVal) > tol || level < minLevel && level < maxLevel ) {
         //if ( std::abs(ksum.real()-parentVal.real())>tol || std::abs(ksum.imag()-parentVal.imag()) >tol ) {
-        //if ( std::abs(ksum) > tol && level < maxLevel ) {
             oct->SubdivideLeaf(curse);
             for (int ichild=0; ichild<8; ++ichild) {
                 curse->ToChild(ichild);
@@ -502,26 +494,17 @@ namespace Lemma {
                 }
                 */
                 /* End of position test */
-                bool isleaf = EvaluateKids2( size, level+1, cp, kvals(ichild), oct, curse );
-                /*
-                if (isleaf) {  // Include result in final integral
-                    LeafDict[curse->GetLeafId()] = ksum/(8.*vol);     //kvals(ichild) / vol;     // VTK
-                    LeafDictIdx[curse->GetLeafId()] = nleaves;        // VTK
-                    SUM += ksum;
-                    VOLSUM += 8*vol;
-                    nleaves += 1;
-                }
-                */
+                EvaluateKids2( size, level+1, cp, kvals(ichild), oct, curse );
                 curse->ToParent();
             }
-            return false;  // not leaf
+            return;  // not a leaf
         }
         LeafDict[curse->GetLeafId()] = ksum/(8.*vol);     //kvals(ichild) / vol;     // VTK
         LeafDictIdx[curse->GetLeafId()] = nleaves;        // VTK
         SUM += ksum;
         VOLSUM += 8*vol;
         nleaves += 1;
-        return true;       // leaf
+        return;     // is a leaf
     }
 
     //--------------------------------------------------------------------------------------
