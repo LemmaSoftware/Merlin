@@ -33,8 +33,8 @@ int main() {
         earth->SetMagneticFieldIncDecMag( 67, 0, 52750, NANOTESLA );
 
     // Transmitter loops
-    auto Tx1 = CircularLoop(31, 15, 100, 100);
-    auto Tx2 = CircularLoop(31, 15, 100, 120);
+    auto Tx1 = CircularLoop(21, 15, 100, 100);
+    auto Tx2 = CircularLoop(21, 15, 100, 120);
     //auto Tx1 = CircularLoop(60, 15, 0, 0); // was 60
 
     auto Kern = KernelV0::NewSP();
@@ -43,13 +43,14 @@ int main() {
         Kern->SetLayeredEarthEM( earth );
         // std::cout << *Kern << std::endl;
 
-        Kern->SetIntegrationSize( (Vector3r() << 200,200,2).finished() );
-        Kern->SetIntegrationOrigin( (Vector3r() << 0,0,15).finished() );
+        Kern->SetIntegrationSize( (Vector3r() << 200,200,200).finished() );
+        Kern->SetIntegrationOrigin( (Vector3r() << 0,0,0).finished() );
         Kern->SetTolerance( 1e-13 );
+        //Kern->SetTolerance( .55 ) ; // 1%
 
         Kern->SetPulseDuration(0.020);
-        Kern->SetPulseCurrent( VectorXr::LinSpaced( 20, .01, 200 )  ); // nbins, low, high
-        Kern->SetDepthLayerInterfaces( VectorXr::LinSpaced( 20, .5, 50 ) );
+        Kern->SetPulseCurrent( VectorXr::LinSpaced( 1, 10, 200 )  ); // nbins, low, high
+        Kern->SetDepthLayerInterfaces( VectorXr::LinSpaced( 2, 5, 5.5 ) );
 
     // We could, I suppose, take the earth model in here? For non-linear that
     // may be more natural to work with?

@@ -138,9 +138,9 @@ namespace Lemma {
         }
 
         std::cout << "Calculating K0 kernel\n";
-        MatrixXcr Kern = MatrixXcr::Zero( Interfaces.size() - 1, PulseI.size() );
-        for (int ilay=0; ilay< Interfaces.size()-1; ++ilay) {
-            for (int iq=0; iq< PulseI.size()-1; ++iq) {
+        MatrixXcr Kern = MatrixXcr::Zero( Interfaces.size()-1, PulseI.size() );
+        for (int ilay=0; ilay<Interfaces.size()-1; ++ilay) {
+            for (int iq=0; iq< PulseI.size(); ++iq) {
                 std::cout << "Layer " << ilay << " q " << iq << std::endl;
                 Size(2) = Interfaces(ilay+1) - Interfaces(ilay);
                 Origin(2) = Interfaces(ilay);
@@ -162,7 +162,7 @@ namespace Lemma {
     //--------------------------------------------------------------------------------------
     Complex KernelV0::IntegrateOnOctreeGrid( const int& ilay, const int& iq, bool vtkOutput) {
 
-        Vector3r cpos = (Size-Origin).array() / 2.;
+        Vector3r cpos = Origin + Size/2.;
 
         SUM = 0;
         VOLSUM = 0;
@@ -200,12 +200,15 @@ namespace Lemma {
                 kerr->SetNumberOfComponents(1);
                 kerr->SetName("nleaf");
 
+            //Real LeafVol(0);
             for (auto leaf : LeafDict) {
                 kr->InsertTuple1( leaf.first, std::real(leaf.second) );
                 ki->InsertTuple1( leaf.first, std::imag(leaf.second) );
                 km->InsertTuple1( leaf.first, std::abs(leaf.second) );
                 kid->InsertTuple1( leaf.first, leaf.first );
+                //LeafVol += std::real(leaf.second);
             }
+            //std::cout << "\n\nLeafVol=" << LeafVol << std::endl;
 
             for (auto leaf : LeafDictIdx) {
                 kerr->InsertTuple1( leaf.first, leaf.second );
@@ -427,9 +430,10 @@ namespace Lemma {
         // Next level step, interested in one level below
         // bitshift requires one extra, faster than, and equivalent to std::pow(2, level+1)
         Vector3r step  = size.array() / (Real)(1 << (level+1) );
-        Vector3r step2 = size.array() / (Real)(1 << (level+2) );
+        Real vol = (step(0)*step(1)*step(2));         // volume of each child
 
-        Real vol = (step2(0)*step2(1)*step2(2));     // volume of each child
+        Vector3r step2 = size.array() / (Real)(1 << (level+2) );
+        Real vol2 = (step2(0)*step2(1)*step2(2));     // volume of each child
 
         Vector3r pos =  cpos - step/2.;
         Eigen::Matrix<Real, 8, 3> posadd = (Eigen::Matrix<Real, 8, 3>() <<
@@ -479,31 +483,44 @@ namespace Lemma {
 
         Complex ksum = kvals.sum();     // Kernel sum
         // Evaluate whether or not furthur splitting is needed
-        Real err = std::abs(ksum - parentVal);
-        if ( std::abs(ksum - parentVal) > tol || level < minLevel && level < maxLevel ) {
+        if ( std::abs(ksum-parentVal) > tol ) { // || level < minLevel && level < maxLevel ) {
+        //if ( std::abs(ksum.real()-parentVal.real())>tol || std::abs(ksum.imag()-parentVal.imag()) >tol ) {
+        //if ( std::abs(ksum) > tol && level < maxLevel ) {
             oct->SubdivideLeaf(curse);
             for (int ichild=0; ichild<8; ++ichild) {
                 curse->ToChild(ichild);
                 Vector3r cp = pos; // Eigen complains about combining these
                 cp += posadd.row(ichild);
-                /* Test for position via alternative means
+                /* Test for position via alternative means */
+                /*
                 Real p[3];
                 GetPosition(curse, p);
-                std::cout << cp[0] << "\t" << p[0] << "\t" << cp[1] << "\t" << p[1]
-                          << "\t" << cp[2] << "\t" << p[2] << "\t" <<  vol<< std::endl;
+                if ( (Vector3r(p) - cp).norm() > 1e-8 ) {
+                    std::cout << "ERROR @ nleaves" << nleaves << "\n" << cp[0] << "\t" << p[0] << "\t" << cp[1] << "\t" << p[1]
+                              << "\t" << cp[2] << "\t" << p[2] << "\t" << vol<< std::endl;
+                    throw std::runtime_error("doom");
+                }
                 */
+                /* End of position test */
                 bool isleaf = EvaluateKids2( size, level+1, cp, kvals(ichild), oct, curse );
+                /*
                 if (isleaf) {  // Include result in final integral
-                    LeafDict[curse->GetLeafId()] = kvals(ichild);       // VTK
-                    LeafDictIdx[curse->GetLeafId()] = nleaves;          // VTK
+                    LeafDict[curse->GetLeafId()] = ksum/(8.*vol);     //kvals(ichild) / vol;     // VTK
+                    LeafDictIdx[curse->GetLeafId()] = nleaves;        // VTK
                     SUM += ksum;
                     VOLSUM += 8*vol;
                     nleaves += 1;
                 }
+                */
                 curse->ToParent();
             }
             return false;  // not leaf
         }
+        LeafDict[curse->GetLeafId()] = ksum/(8.*vol);     //kvals(ichild) / vol;     // VTK
+        LeafDictIdx[curse->GetLeafId()] = nleaves;        // VTK
+        SUM += ksum;
+        VOLSUM += 8*vol;
+        nleaves += 1;
         return true;       // leaf
     }
 

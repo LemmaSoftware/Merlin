@@ -265,8 +265,8 @@ namespace Lemma {
         // ====================  DATA MEMBERS  =========================
 
         int                                       nleaves;
-        int                                       minLevel=3;
-        int                                       maxLevel=10;
+        int                                       minLevel=4;
+        int                                       maxLevel=8;
 
         Real                                      VOLSUM;
         Real                                      tol=1e-11;
