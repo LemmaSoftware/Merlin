@@ -223,10 +223,10 @@ namespace Lemma {
         /**
          *  Returns the kernel value for an input prism
          */
-        Complex f( const Vector3r& r, const Real& volume , const Vector3cr& Ht, const Vector3cr& Hr);
+        VectorXcr f( const Vector3r& r, const Real& volume , const Vector3cr& Ht, const Vector3cr& Hr);
 
-        Complex ComputeV0Cell(const Vector3cr& Bt, const Vector3cr& Br, const Real& vol,
-            const Real& phi);
+//         Complex ComputeV0Cell(const Vector3cr& Bt, const Vector3cr& Br, const Real& vol,
+//             const Real& phi);
 
         Complex ComputeV0Cell(const EllipticB& EBT, const EllipticB& EBR,
                 const Real& sintheta, const Real& phase, const Real& Mn0Abs,
@@ -236,7 +236,7 @@ namespace Lemma {
 
         Vector3r ComputeMn0(const Real& Porosity, const Vector3r& B0);
 
-        Complex IntegrateOnOctreeGrid( const int& ilay, const int& iq, bool vtkOutput=false );
+        Complex IntegrateOnOctreeGrid( const int& iq, bool vtkOutput=false );
 
         /**
          *  Recursive call to integrate a function on an adaptive Octree Grid.
@@ -249,7 +249,7 @@ namespace Lemma {
          *  @param[in] cpos is the centre position of the parent cuboid
          */
         void EvaluateKids(  const Vector3r& size, const int& level, const Vector3r& cpos,
-                            const Complex& parentVal );
+                            const VectorXcr& parentVal );
 
         #ifdef LEMMAUSEVTK
         /**
@@ -264,6 +264,7 @@ namespace Lemma {
 
         // ====================  DATA MEMBERS  =========================
 
+        int                                       ilay;
         int                                       nleaves;
         int                                       minLevel=4;
         int                                       maxLevel=8;
@@ -272,10 +273,10 @@ namespace Lemma {
         Real                                      tol=1e-11;
         Real                                      Temperature=283.;
         Real                                      Taup = .020;  // Sec
-        Real                                      Ip = 10;      // Amps
+        Real                                      Ip;           // Amps pulse current, deprecated PulseI
         Real                                      Larmor;
 
-        Complex                                   SUM;
+        Complex                                   SUM;          // Depreceated, use Kern instead
 
         Vector3r                                  Size;
         Vector3r                                  Origin;
@@ -283,12 +284,12 @@ namespace Lemma {
         VectorXr   PulseI;
         VectorXr   Interfaces;
 
-        std::shared_ptr< LayeredEarthEM >         SigmaModel = nullptr;
+        MatrixXcr   Kern;
 
+        std::shared_ptr< LayeredEarthEM >         SigmaModel = nullptr;
         std::shared_ptr< FieldPoints >            cpoints;
 
         std::map< std::string , std::shared_ptr< PolygonalWireAntenna > >  TxRx;
-
         std::map< std::string , std::shared_ptr< EMEarth1D > >             EMEarths;
 
         #ifdef LEMMAUSEVTK

@@ -121,6 +121,7 @@ namespace Lemma {
                 // TODO query for method, altough with flat antennae, this is fastest
                 EMEarths[tx]->SetHankelTransformMethod(ANDERSON801);
                 EMEarths[tx]->SetTxRxMode(TX);
+                TxRx[tx]->SetCurrent(1.);
         }
         for (auto rx : Rx) {
             if (EMEarths.count(rx)) {
@@ -134,33 +135,34 @@ namespace Lemma {
                     // TODO query for method, altough with flat antennae, this is fastest
                     EMEarths[rx]->SetHankelTransformMethod(ANDERSON801);
                     EMEarths[rx]->SetTxRxMode(RX);
+                    TxRx[rx]->SetCurrent(1.);
             }
         }
 
         std::cout << "Calculating K0 kernel\n";
-        MatrixXcr Kern = MatrixXcr::Zero( Interfaces.size()-1, PulseI.size() );
-        for (int ilay=0; ilay<Interfaces.size()-1; ++ilay) {
-            for (int iq=0; iq< PulseI.size(); ++iq) {
-                std::cout << "Layer " << ilay << " q " << iq << std::endl;
-                Size(2) = Interfaces(ilay+1) - Interfaces(ilay);
-                Origin(2) = Interfaces(ilay);
-                Ip = PulseI(iq);
-                Kern(ilay, iq) = IntegrateOnOctreeGrid( ilay, iq, vtkOutput );
-            }
+        Kern = MatrixXcr::Zero( Interfaces.size()-1, PulseI.size() );
+        for (ilay=0; ilay<Interfaces.size()-1; ++ilay) {
+            std::cout << "Layer " << ilay << std::endl; //<< " q " << iq << std::endl;
+            Size(2) = Interfaces(ilay+1) - Interfaces(ilay);
+            Origin(2) = Interfaces(ilay);
+            //for (int iq=0; iq< PulseI.size(); ++iq) {
+            //    Ip = PulseI(iq);
+                //Kern(ilay, iq) =
+            IntegrateOnOctreeGrid( 0, vtkOutput );
+            //}
         }
         std::cout << "\rFinished KERNEL\n";
         std::cout << "real\n";
         std::cout << Kern.real() << std::endl;
         std::cout << "imag\n";
         std::cout << Kern.imag() << std::endl;
-        //IntegrateOnOctreeGrid( vtkOutput );
     }
 
     //--------------------------------------------------------------------------------------
     //       Class:  KernelV0
     //      Method:  IntegrateOnOctreeGrid
     //--------------------------------------------------------------------------------------
-    Complex KernelV0::IntegrateOnOctreeGrid( const int& ilay, const int& iq, bool vtkOutput) {
+    Complex KernelV0::IntegrateOnOctreeGrid( const int& iq, bool vtkOutput) {
 
         Vector3r cpos = Origin + Size/2.;
 
@@ -168,7 +170,7 @@ namespace Lemma {
         VOLSUM = 0;
         nleaves = 0;
         if (!vtkOutput) {
-            EvaluateKids( Size, 0, cpos, 1e6 );
+            EvaluateKids( Size, 0, cpos, VectorXcr::Ones(PulseI.size()) );
         } else {
         #ifdef LEMMAUSEVTK
             vtkHyperOctree* oct = vtkHyperOctree::New();
@@ -253,38 +255,59 @@ namespace Lemma {
     //       Class:  KernelV0
     //      Method:  f
     //--------------------------------------------------------------------------------------
-    Complex KernelV0::f( const Vector3r& r, const Real& volume, const Vector3cr& Ht, const Vector3cr& Hr ) {
-        //return Complex(volume*Ht.dot(Hr));
-        return ComputeV0Cell(MU0*Ht, MU0*Hr, volume, 1.0);
-    }
-
-    //--------------------------------------------------------------------------------------
-    //       Class:  KernelV0
-    //      Method:  ComputeV0Cell
-    //--------------------------------------------------------------------------------------
-    Complex KernelV0::ComputeV0Cell(const Vector3cr& Bt,
-                const Vector3cr& Br, const Real& vol, const Real& phi) {
+    VectorXcr KernelV0::f( const Vector3r& r, const Real& volume, const Vector3cr& Ht, const Vector3cr& Hr ) {
 
         // Compute the elliptic fields
         Vector3r B0hat = SigmaModel->GetMagneticFieldUnitVector();
         Vector3r B0 = SigmaModel->GetMagneticField();
 
         // Elliptic representation
-        EllipticB EBT = EllipticFieldRep(Bt, B0hat);
-        EllipticB EBR = EllipticFieldRep(Br, B0hat);
+        EllipticB EBT = EllipticFieldRep(MU0*Ht, B0hat);
+        EllipticB EBR = EllipticFieldRep(MU0*Hr, B0hat);
 
         // Compute Mn0
-        Vector3r Mn0 = ComputeMn0(phi, B0);
+        Vector3r Mn0 = ComputeMn0(1.0, B0);
         Real Mn0Abs = Mn0.norm();
 
-        // Compute the tipping angle
-        Real sintheta = std::sin(0.5*GAMMA*Ip*Taup*std::abs(EBT.alpha-EBT.beta));
-
-        // Compute phase delay, TODO add transmiiter phase and delay time phase!
+        // Compute phase delay
+        // TODO add transmiiter phase and delay time phase!
         Real phase = EBR.zeta+EBT.zeta;
 
-        return ComputeV0Cell(EBT, EBR, sintheta, phase, Mn0Abs, vol);
+        // Calcuate vector of all responses
+        VectorXcr F = VectorXcr::Zero( PulseI.size() );
+        for (int iq=0; iq<PulseI.size(); ++iq) {
+            // Compute the tipping angle
+            Real sintheta = std::sin(0.5*GAMMA*PulseI(iq)*Taup*std::abs(EBT.alpha-EBT.beta));
+            F(iq) = ComputeV0Cell(EBT, EBR, sintheta, phase, Mn0Abs, volume);
+        }
+        return F;
     }
+
+//     //--------------------------------------------------------------------------------------
+//     //       Class:  KernelV0
+//     //      Method:  ComputeV0Cell
+//     //--------------------------------------------------------------------------------------
+//     Complex KernelV0::ComputeV0Cell(const Vector3cr& Bt,
+//                 const Vector3cr& Br, const Real& vol, const Real& phi) {
+//
+//         // Compute the elliptic fields
+//         Vector3r B0hat = SigmaModel->GetMagneticFieldUnitVector();
+//         Vector3r B0 = SigmaModel->GetMagneticField();
+//
+//         // Elliptic representation
+//         EllipticB EBT = EllipticFieldRep(Bt, B0hat);
+//         EllipticB EBR = EllipticFieldRep(Br, B0hat);
+//
+//         // Compute Mn0
+//         Vector3r Mn0 = ComputeMn0(phi, B0);
+//         Real Mn0Abs = Mn0.norm();
+//
+//         // Compute phase delay, TODO add transmiiter phase and delay time phase!
+//         Real phase = EBR.zeta+EBT.zeta;
+//
+//         Real sintheta = std::sin(0.5*GAMMA*Ip*Taup*std::abs(EBT.alpha-EBT.beta));
+//         return 0; ComputeV0Cell(EBT, EBR, sintheta, phase, Mn0Abs, vol);
+//     }
 
     //--------------------------------------------------------------------------------------
     //       Class:  KernelV0
@@ -293,14 +316,10 @@ namespace Lemma {
     Complex KernelV0::ComputeV0Cell(const EllipticB& EBT, const EllipticB& EBR,
                 const Real& sintheta, const Real& phase, const Real& Mn0Abs,
                 const Real& vol) {
-
-        Vector3r B0hat = {1,0,0};
-
         // earth response of receiver adjoint field
+        Vector3r B0hat = SigmaModel->GetMagneticFieldUnitVector();
         Complex ejztr = std::exp(Complex(0, EBR.zeta + EBT.zeta));
-
-        Complex PhaseTerm = EBR.bhat.dot(EBT.bhat) +
-               (B0hat.dot(EBR.bhat.cross(EBT.bhat) ));
+        Complex PhaseTerm = EBR.bhat.dot(EBT.bhat) + (B0hat.dot(EBR.bhat.cross(EBT.bhat) ));
         return -vol*Complex(0,Larmor)*Mn0Abs*(EBR.alpha+EBR.beta)*ejztr*sintheta*PhaseTerm;
     }
 
@@ -338,7 +357,7 @@ namespace Lemma {
     //      Method:  EvaluateKids
     //--------------------------------------------------------------------------------------
     void KernelV0::EvaluateKids( const Vector3r& size, const int& level, const Vector3r& cpos,
-        const Complex& parentVal ) {
+        const VectorXcr& parentVal ) {
 
         std::cout << "\r" << (int)(1e2*VOLSUM/(Size[0]*Size[1]*Size[2])) << "\t" << nleaves;
         std::cout.flush();
@@ -359,7 +378,8 @@ namespace Lemma {
                         0, step[1], step[2],
                   step[0], step[1], step[2] ).finished();
 
-        VectorXcr kvals(8);       // individual kernel vals
+        //VectorXcr kvals(8);       // individual kernel vals
+        MatrixXcr kvals(8, PulseI.size());       // individual kernel vals
         cpoints->ClearFields();
         for (int ichild=0; ichild<8; ++ichild) {
             Vector3r cp = pos;    // Eigen complains about combining these
@@ -392,21 +412,22 @@ namespace Lemma {
         for (int ichild=0; ichild<8; ++ichild) {
             Vector3r cp = pos;    // Eigen complains about combining these
             cp += posadd.row(ichild);
-            kvals(ichild) = f(cp, vol, Ht.col(ichild), Hr.col(ichild));
+            kvals.row(ichild) = f(cp, vol, Ht.col(ichild), Hr.col(ichild));
         }
 
-        Complex ksum = kvals.sum();     // Kernel sum
+        VectorXcr ksum = kvals.colwise().sum();     // Kernel sum
         // Evaluate whether or not furthur splitting is needed
-        if ( std::abs(ksum - parentVal) > tol || level < minLevel && level < maxLevel ) {
+        if ( ((ksum - parentVal).array().abs() > tol).any() || level < minLevel && level < maxLevel ) {
+            // Not a leaf dive further in
             for (int ichild=0; ichild<8; ++ichild) {
                 Vector3r cp = pos; // Eigen complains about combining these
                 cp += posadd.row(ichild);
-                EvaluateKids( size, level+1, cp, kvals(ichild) );
+                EvaluateKids( size, level+1, cp, kvals.row(ichild) );
             }
             return; // not leaf
         }
-        // Save here instead?
-        SUM += ksum;
+        // implicit else, is a leaf
+        Kern.row(ilay) += ksum;
         VOLSUM += 8.*vol;
         nleaves += 1;
         return;     // is leaf
@@ -471,7 +492,7 @@ namespace Lemma {
         for (int ichild=0; ichild<8; ++ichild) {
             Vector3r cp = pos; // Eigen complains about combining these
             cp += posadd.row(ichild);
-            kvals(ichild) = f(cp, vol, Ht.col(ichild), Hr.col(ichild));
+            kvals(ichild) = f(cp, vol, Ht.col(ichild), Hr.col(ichild))(0);
         }
 
         Complex ksum = kvals.sum();     // Kernel sum

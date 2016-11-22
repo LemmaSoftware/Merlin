@@ -45,7 +45,7 @@ int main() {
 
         Kern->SetIntegrationSize( (Vector3r() << 200,200,200).finished() );
         Kern->SetIntegrationOrigin( (Vector3r() << 0,0,0).finished() );
-        Kern->SetTolerance( 1e-13 );
+        Kern->SetTolerance( 1e-12 );
         //Kern->SetTolerance( .55 ) ; // 1%
 
         Kern->SetPulseDuration(0.020);
@@ -57,8 +57,9 @@ int main() {
              31.347205894128976, 28.06346770557137, 25.139117042424758, 22.53420773366429, 20.214205433283347,
              18.144318026099942, 16.299965972298878, 14.652633628829891, 13.184271405688083, 11.870540177313893,
              10.697057141915716, 9.64778948429609, 8.709338689612677, 7.871268012862094;
-        Kern->SetPulseCurrent( VectorXr::LinSpaced( 1, 10, 200 )  ); // nbins, low, high
-        Kern->SetDepthLayerInterfaces( VectorXr::LinSpaced( 2, 5, 5.5 ) );
+        //Kern->SetPulseCurrent( VectorXr::LinSpaced( 1, 10, 200 )  ); // nbins, low, high
+        Kern->SetPulseCurrent( I ); // nbins, low, high
+        Kern->SetDepthLayerInterfaces( VectorXr::LinSpaced( 30, 3, 45.5 ) );
 
     // We could, I suppose, take the earth model in here? For non-linear that
     // may be more natural to work with?
