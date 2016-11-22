@@ -10,11 +10,11 @@
 /**
  * @file
  * @date      11/11/2016 01:47:25 PM
- * @version   $Id$
  * @author    Trevor Irons (ti)
  * @email     tirons@egi.utah.edu
  * @copyright Copyright (c) 2016, University of Utah
  * @copyright Copyright (c) 2016, Lemma Software, LLC
+ * @copyright Copyright (c) 2008, Colorado School of Mines
  */
 
 
@@ -145,16 +145,12 @@ namespace Lemma {
             std::cout << "Layer " << ilay << std::endl; //<< " q " << iq << std::endl;
             Size(2) = Interfaces(ilay+1) - Interfaces(ilay);
             Origin(2) = Interfaces(ilay);
-            //for (int iq=0; iq< PulseI.size(); ++iq) {
-            //    Ip = PulseI(iq);
-                //Kern(ilay, iq) =
-            IntegrateOnOctreeGrid( 0, vtkOutput );
-            //}
+            IntegrateOnOctreeGrid( vtkOutput );
         }
         std::cout << "\rFinished KERNEL\n";
-        std::cout << "real\n";
+        std::cout << "#real\n";
         std::cout << Kern.real() << std::endl;
-        std::cout << "imag\n";
+        std::cout << "#imag\n";
         std::cout << Kern.imag() << std::endl;
     }
 
@@ -162,7 +158,7 @@ namespace Lemma {
     //       Class:  KernelV0
     //      Method:  IntegrateOnOctreeGrid
     //--------------------------------------------------------------------------------------
-    Complex KernelV0::IntegrateOnOctreeGrid( const int& iq, bool vtkOutput) {
+    void KernelV0::IntegrateOnOctreeGrid( bool vtkOutput) {
 
         Vector3r cpos = Origin + Size/2.;
 
@@ -179,7 +175,9 @@ namespace Lemma {
                 oct->SetSize( Size(0), Size(1), Size(2) );
             vtkHyperOctreeCursor* curse = oct->NewCellCursor();
                 curse->ToRoot();
-            EvaluateKids2( Size, 0, cpos, 1e6, oct, curse );
+            EvaluateKids2( Size, 0, cpos, VectorXcr::Ones(PulseI.size()), oct, curse );
+
+            for (int iq=0; iq<PulseI.size(); ++iq) {
 
             // Fill in leaf data
             vtkDoubleArray* kr = vtkDoubleArray::New();
@@ -204,9 +202,9 @@ namespace Lemma {
 
             //Real LeafVol(0);
             for (auto leaf : LeafDict) {
-                kr->InsertTuple1( leaf.first, std::real(leaf.second) );
-                ki->InsertTuple1( leaf.first, std::imag(leaf.second) );
-                km->InsertTuple1( leaf.first, std::abs(leaf.second) );
+                kr->InsertTuple1( leaf.first, std::real(leaf.second(iq)) );
+                ki->InsertTuple1( leaf.first, std::imag(leaf.second(iq)) );
+                km->InsertTuple1( leaf.first, std::abs(leaf.second(iq)) );
                 kid->InsertTuple1( leaf.first, leaf.first );
                 //LeafVol += std::real(leaf.second);
             }
@@ -216,11 +214,11 @@ namespace Lemma {
                 kerr->InsertTuple1( leaf.first, leaf.second );
             }
 
-            oct->GetLeafData()->AddArray(kr);
-            oct->GetLeafData()->AddArray(ki);
-            oct->GetLeafData()->AddArray(km);
-            oct->GetLeafData()->AddArray(kid);
-            oct->GetLeafData()->AddArray(kerr);
+            auto kri = oct->GetLeafData()->AddArray(kr);
+            auto kii = oct->GetLeafData()->AddArray(ki);
+            auto kmi = oct->GetLeafData()->AddArray(km);
+            auto kidi = oct->GetLeafData()->AddArray(kid);
+            auto keri = oct->GetLeafData()->AddArray(kerr);
 
             auto write = vtkXMLHyperOctreeWriter::New();
                 //write.SetDataModeToAscii()
@@ -231,11 +229,20 @@ namespace Lemma {
                 write->Write();
                 write->Delete();
 
-            //kerr->Delete();
+            oct->GetLeafData()->RemoveArray( kri );
+            oct->GetLeafData()->RemoveArray( kii );
+            oct->GetLeafData()->RemoveArray( kmi );
+            oct->GetLeafData()->RemoveArray( kidi );
+            oct->GetLeafData()->RemoveArray( keri );
+
+            kerr->Delete();
             kid->Delete();
             kr->Delete();
             ki->Delete();
             km->Delete();
+
+            }
+
             curse->Delete();
             oct->Delete();
         #else
@@ -245,10 +252,6 @@ namespace Lemma {
         }
         std::cout << "\nVOLSUM=" << VOLSUM << "\tActual=" <<  Size(0)*Size(1)*Size(2)
                   << "\tDifference=" << VOLSUM - (Size(0)*Size(1)*Size(2)) <<  std::endl;
-        std::cout << "nleaves\t" << nleaves << std::endl;
-        std::cout << "KSUM\t" << SUM << std::endl;
-
-        return SUM;
     }
 
     //--------------------------------------------------------------------------------------
@@ -270,15 +273,16 @@ namespace Lemma {
         Real Mn0Abs = Mn0.norm();
 
         // Compute phase delay
-        // TODO add transmiiter phase and delay time phase!
-        Real phase = EBR.zeta+EBT.zeta;
+        // TODO add transmiiter current phase and delay induced apparent time phase!
+        Complex PhaseTerm = EBR.bhat.dot(EBT.bhat) + (B0hat.dot(EBR.bhat.cross(EBT.bhat) ));
+        Complex ejztr = std::exp(Complex(0, EBR.zeta + EBT.zeta));
 
         // Calcuate vector of all responses
         VectorXcr F = VectorXcr::Zero( PulseI.size() );
         for (int iq=0; iq<PulseI.size(); ++iq) {
             // Compute the tipping angle
             Real sintheta = std::sin(0.5*GAMMA*PulseI(iq)*Taup*std::abs(EBT.alpha-EBT.beta));
-            F(iq) = ComputeV0Cell(EBT, EBR, sintheta, phase, Mn0Abs, volume);
+            F(iq) = -volume*Complex(0,Larmor)*Mn0Abs*(EBR.alpha+EBR.beta)*ejztr*sintheta*PhaseTerm;
         }
         return F;
     }
@@ -287,41 +291,15 @@ namespace Lemma {
 //     //       Class:  KernelV0
 //     //      Method:  ComputeV0Cell
 //     //--------------------------------------------------------------------------------------
-//     Complex KernelV0::ComputeV0Cell(const Vector3cr& Bt,
-//                 const Vector3cr& Br, const Real& vol, const Real& phi) {
-//
-//         // Compute the elliptic fields
+//     Complex KernelV0::ComputeV0Cell(const EllipticB& EBT, const EllipticB& EBR,
+//                 const Real& sintheta, const Real& phase, const Real& Mn0Abs,
+//                 const Real& vol) {
+//         // earth response of receiver adjoint field
 //         Vector3r B0hat = SigmaModel->GetMagneticFieldUnitVector();
-//         Vector3r B0 = SigmaModel->GetMagneticField();
-//
-//         // Elliptic representation
-//         EllipticB EBT = EllipticFieldRep(Bt, B0hat);
-//         EllipticB EBR = EllipticFieldRep(Br, B0hat);
-//
-//         // Compute Mn0
-//         Vector3r Mn0 = ComputeMn0(phi, B0);
-//         Real Mn0Abs = Mn0.norm();
-//
-//         // Compute phase delay, TODO add transmiiter phase and delay time phase!
-//         Real phase = EBR.zeta+EBT.zeta;
-//
-//         Real sintheta = std::sin(0.5*GAMMA*Ip*Taup*std::abs(EBT.alpha-EBT.beta));
-//         return 0; ComputeV0Cell(EBT, EBR, sintheta, phase, Mn0Abs, vol);
+//         Complex ejztr = std::exp(Complex(0, EBR.zeta + EBT.zeta));
+//         Complex PhaseTerm = EBR.bhat.dot(EBT.bhat) + (B0hat.dot(EBR.bhat.cross(EBT.bhat) ));
+//         return -vol*Complex(0,Larmor)*Mn0Abs*(EBR.alpha+EBR.beta)*ejztr*sintheta*PhaseTerm;
 //     }
-
-    //--------------------------------------------------------------------------------------
-    //       Class:  KernelV0
-    //      Method:  ComputeV0Cell
-    //--------------------------------------------------------------------------------------
-    Complex KernelV0::ComputeV0Cell(const EllipticB& EBT, const EllipticB& EBR,
-                const Real& sintheta, const Real& phase, const Real& Mn0Abs,
-                const Real& vol) {
-        // earth response of receiver adjoint field
-        Vector3r B0hat = SigmaModel->GetMagneticFieldUnitVector();
-        Complex ejztr = std::exp(Complex(0, EBR.zeta + EBT.zeta));
-        Complex PhaseTerm = EBR.bhat.dot(EBT.bhat) + (B0hat.dot(EBR.bhat.cross(EBT.bhat) ));
-        return -vol*Complex(0,Larmor)*Mn0Abs*(EBR.alpha+EBR.beta)*ejztr*sintheta*PhaseTerm;
-    }
 
     //--------------------------------------------------------------------------------------
     //       Class:  KernelV0
@@ -378,7 +356,6 @@ namespace Lemma {
                         0, step[1], step[2],
                   step[0], step[1], step[2] ).finished();
 
-        //VectorXcr kvals(8);       // individual kernel vals
         MatrixXcr kvals(8, PulseI.size());       // individual kernel vals
         cpoints->ClearFields();
         for (int ichild=0; ichild<8; ++ichild) {
@@ -439,7 +416,7 @@ namespace Lemma {
     //      Method:  EvaluateKids2 -- same as Evaluate Kids, but include VTK octree generation
     //--------------------------------------------------------------------------------------
     void KernelV0::EvaluateKids2( const Vector3r& size, const int& level, const Vector3r& cpos,
-        const Complex& parentVal, vtkHyperOctree* oct, vtkHyperOctreeCursor* curse) {
+        const VectorXcr& parentVal, vtkHyperOctree* oct, vtkHyperOctreeCursor* curse) {
 
         std::cout << "\r" << (int)(1e2*VOLSUM/(Size[0]*Size[1]*Size[2])) << "\t" << nleaves;
         std::cout.flush();
@@ -460,7 +437,7 @@ namespace Lemma {
                         0, step[1], step[2],
                   step[0], step[1], step[2] ).finished();
 
-        VectorXcr kvals(8);                     // individual kernel vals
+        MatrixXcr kvals(8, PulseI.size());       // individual kernel vals
         cpoints->ClearFields();
         for (int ichild=0; ichild<8; ++ichild) {
             Vector3r cp = pos;    // Eigen complains about combining these
@@ -490,15 +467,14 @@ namespace Lemma {
         }
 
         for (int ichild=0; ichild<8; ++ichild) {
-            Vector3r cp = pos; // Eigen complains about combining these
+            Vector3r cp = pos;    // Eigen complains about combining these
             cp += posadd.row(ichild);
-            kvals(ichild) = f(cp, vol, Ht.col(ichild), Hr.col(ichild))(0);
+            kvals.row(ichild) = f(cp, vol, Ht.col(ichild), Hr.col(ichild));
         }
 
-        Complex ksum = kvals.sum();     // Kernel sum
+        VectorXcr ksum = kvals.colwise().sum();     // Kernel sum
         // Evaluate whether or not furthur splitting is needed
-        if ( std::abs(ksum - parentVal) > tol || level < minLevel && level < maxLevel ) {
-        //if ( std::abs(ksum.real()-parentVal.real())>tol || std::abs(ksum.imag()-parentVal.imag()) >tol ) {
+        if ( ((ksum - parentVal).array().abs() > tol).any() || level < minLevel && level < maxLevel ) {
             oct->SubdivideLeaf(curse);
             for (int ichild=0; ichild<8; ++ichild) {
                 curse->ToChild(ichild);
@@ -515,14 +491,14 @@ namespace Lemma {
                 }
                 */
                 /* End of position test */
-                EvaluateKids2( size, level+1, cp, kvals(ichild), oct, curse );
+                EvaluateKids2( size, level+1, cp, kvals.row(ichild), oct, curse );
                 curse->ToParent();
             }
             return;  // not a leaf
         }
-        LeafDict[curse->GetLeafId()] = ksum/(8.*vol);     //kvals(ichild) / vol;     // VTK
-        LeafDictIdx[curse->GetLeafId()] = nleaves;        // VTK
-        SUM += ksum;
+        LeafDict[curse->GetLeafId()] = ksum/(8.*vol);
+        LeafDictIdx[curse->GetLeafId()] = nleaves;
+        Kern.row(ilay) += ksum;
         VOLSUM += 8*vol;
         nleaves += 1;
         return;     // is a leaf

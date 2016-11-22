@@ -34,7 +34,7 @@ int main() {
 
     // Transmitter loops
     auto Tx1 = CircularLoop(21, 15, 100, 100);
-    auto Tx2 = CircularLoop(21, 15, 100, 120);
+    auto Tx2 = CircularLoop(21, 15, 100, 124.8);
     //auto Tx1 = CircularLoop(60, 15, 0, 0); // was 60
 
     auto Kern = KernelV0::NewSP();
@@ -45,7 +45,7 @@ int main() {
 
         Kern->SetIntegrationSize( (Vector3r() << 200,200,200).finished() );
         Kern->SetIntegrationOrigin( (Vector3r() << 0,0,0).finished() );
-        Kern->SetTolerance( 1e-12 );
+        Kern->SetTolerance( 1e-10 );
         //Kern->SetTolerance( .55 ) ; // 1%
 
         Kern->SetPulseDuration(0.020);
@@ -63,9 +63,9 @@ int main() {
 
     // We could, I suppose, take the earth model in here? For non-linear that
     // may be more natural to work with?
-    std::vector<std::string> tx = {std::string("Coil 1")};
+    std::vector<std::string> tx = {std::string("Coil 1"), std::string("Coil 2") };
     std::vector<std::string> rx = {std::string("Coil 1")};
-    Kern->CalculateK0( tx, rx, false );
+    Kern->CalculateK0( tx, rx, true );
 
 }
 

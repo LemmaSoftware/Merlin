@@ -10,11 +10,11 @@
 /**
  * @file
  * @date      11/11/2016 01:47:34 PM
- * @version   $Id$
  * @author    Trevor Irons (ti)
  * @email     tirons@egi.utah.edu
  * @copyright Copyright (c) 2016, University of Utah
  * @copyright Copyright (c) 2016, Lemma Software, LLC
+ * @copyright Copyright (c) 2008, Colorado School of Mines
  */
 #ifndef  KERNELV0_INC
 #define  KERNELV0_INC
@@ -225,18 +225,15 @@ namespace Lemma {
          */
         VectorXcr f( const Vector3r& r, const Real& volume , const Vector3cr& Ht, const Vector3cr& Hr);
 
-//         Complex ComputeV0Cell(const Vector3cr& Bt, const Vector3cr& Br, const Real& vol,
-//             const Real& phi);
-
-        Complex ComputeV0Cell(const EllipticB& EBT, const EllipticB& EBR,
-                const Real& sintheta, const Real& phase, const Real& Mn0Abs,
-                const Real& vol);
+//         Complex ComputeV0Cell(const EllipticB& EBT, const EllipticB& EBR,
+//                 const Real& sintheta, const Real& phase, const Real& Mn0Abs,
+//                 const Real& vol);
 
         EllipticB EllipticFieldRep (const Vector3cr& B, const Vector3r& B0hat);
 
         Vector3r ComputeMn0(const Real& Porosity, const Vector3r& B0);
 
-        Complex IntegrateOnOctreeGrid( const int& iq, bool vtkOutput=false );
+        void IntegrateOnOctreeGrid( bool vtkOutput=false );
 
         /**
          *  Recursive call to integrate a function on an adaptive Octree Grid.
@@ -257,7 +254,7 @@ namespace Lemma {
          *  HyperOctree, which is useful for visualization.
          */
         void EvaluateKids2(  const Vector3r& size, const int& level, const Vector3r& cpos,
-                            const Complex& parentVal, vtkHyperOctree* octree, vtkHyperOctreeCursor* curse );
+                            const VectorXcr& parentVal, vtkHyperOctree* octree, vtkHyperOctreeCursor* curse );
 
         void GetPosition( vtkHyperOctreeCursor* Cursor, Real* p );
         #endif
@@ -293,7 +290,7 @@ namespace Lemma {
         std::map< std::string , std::shared_ptr< EMEarth1D > >             EMEarths;
 
         #ifdef LEMMAUSEVTK
-        std::map< int, Complex  >                 LeafDict;
+        std::map< int, VectorXcr  >               LeafDict;
         std::map< int, int     >                  LeafDictIdx;
         std::map< int, Real     >                 LeafDictErr;
         #endif
