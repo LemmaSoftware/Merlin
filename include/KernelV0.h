@@ -270,10 +270,7 @@ namespace Lemma {
         Real                                      tol=1e-11;
         Real                                      Temperature=283.;
         Real                                      Taup = .020;  // Sec
-        Real                                      Ip;           // Amps pulse current, deprecated PulseI
         Real                                      Larmor;
-
-        Complex                                   SUM;          // Depreceated, use Kern instead
 
         Vector3r                                  Size;
         Vector3r                                  Origin;

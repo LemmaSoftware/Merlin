@@ -41,12 +41,10 @@ int main() {
         Kern->PushCoil( "Coil 1", Tx1 );
         Kern->PushCoil( "Coil 2", Tx2 );
         Kern->SetLayeredEarthEM( earth );
-        // std::cout << *Kern << std::endl;
 
         Kern->SetIntegrationSize( (Vector3r() << 200,200,200).finished() );
         Kern->SetIntegrationOrigin( (Vector3r() << 0,0,0).finished() );
-        Kern->SetTolerance( 1e-10 );
-        //Kern->SetTolerance( .55 ) ; // 1%
+        Kern->SetTolerance( 1e-12 );
 
         Kern->SetPulseDuration(0.020);
         VectorXr I(36);
@@ -59,7 +57,14 @@ int main() {
              10.697057141915716, 9.64778948429609, 8.709338689612677, 7.871268012862094;
         //Kern->SetPulseCurrent( VectorXr::LinSpaced( 1, 10, 200 )  ); // nbins, low, high
         Kern->SetPulseCurrent( I ); // nbins, low, high
-        Kern->SetDepthLayerInterfaces( VectorXr::LinSpaced( 30, 3, 45.5 ) );
+
+        //Kern->SetDepthLayerInterfaces( VectorXr::LinSpaced( 30, 3, 45.5 ) ); // nlay, low, high
+        //10**np.linspace(np.log10(10),np.log10(19),10)
+        VectorXr interfaces = VectorXr::LinSpaced(31, std::log10(2), std::log10(50)); // 30 log spaced
+        for (int i=0; i<interfaces.size(); ++i) {
+            interfaces(i) = std::pow(10, interfaces(i));
+        }
+        Kern->SetDepthLayerInterfaces( interfaces ); // nlay, low, high
 
     // We could, I suppose, take the earth model in here? For non-linear that
     // may be more natural to work with?
@@ -67,6 +72,9 @@ int main() {
     std::vector<std::string> rx = {std::string("Coil 1")};
     Kern->CalculateK0( tx, rx, true );
 
+    ofstream out = ofstream("k.yaml");
+    out << *Kern;
+    out.close();
 }
 
 std::shared_ptr<Lemma::PolygonalWireAntenna> CircularLoop ( int nd, Real Radius, Real Offsetx, Real Offsety ) {

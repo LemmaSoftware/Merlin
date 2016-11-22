@@ -80,10 +80,22 @@ namespace Lemma {
         for ( auto txm : TxRx) {
             node[txm.first] = txm.second->Serialize();
         }
-
         // LayeredEarthEM
         node["SigmaModel"] = SigmaModel->Serialize();
 
+        node["Larmor"] = Larmor;
+        node["Temperature"] = Temperature;
+        node["tol"] = tol;
+        node["minLevel"] = minLevel;
+        node["maxLevel"] = maxLevel;
+        node["Taup"] = Taup;
+
+        node["PulseI"] = PulseI;
+        node["Interfaces"] = Interfaces;
+
+        for ( int ilay=0; ilay<Interfaces.size()-1; ++ilay ) {
+            node["Kern-" + to_string(ilay) ] = static_cast<VectorXcr>(Kern.row(ilay));
+        }
         return node;
     }		// -----  end of method KernelV0::Serialize  -----
 
@@ -142,7 +154,7 @@ namespace Lemma {
         std::cout << "Calculating K0 kernel\n";
         Kern = MatrixXcr::Zero( Interfaces.size()-1, PulseI.size() );
         for (ilay=0; ilay<Interfaces.size()-1; ++ilay) {
-            std::cout << "Layer " << ilay << std::endl; //<< " q " << iq << std::endl;
+            std::cout << "Layer " << ilay << "\tfrom " << Interfaces(ilay) <<" to "<< Interfaces(ilay+1) << std::endl; //<< " q " << iq << std::endl;
             Size(2) = Interfaces(ilay+1) - Interfaces(ilay);
             Origin(2) = Interfaces(ilay);
             IntegrateOnOctreeGrid( vtkOutput );
@@ -162,7 +174,6 @@ namespace Lemma {
 
         Vector3r cpos = Origin + Size/2.;
 
-        SUM = 0;
         VOLSUM = 0;
         nleaves = 0;
         if (!vtkOutput) {
