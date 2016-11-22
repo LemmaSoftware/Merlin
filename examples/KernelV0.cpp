@@ -44,7 +44,7 @@ int main() {
 
         Kern->SetIntegrationSize( (Vector3r() << 200,200,200).finished() );
         Kern->SetIntegrationOrigin( (Vector3r() << 0,0,0).finished() );
-        Kern->SetTolerance( 1e-12 );
+        Kern->SetTolerance( 1e-10 );
 
         Kern->SetPulseDuration(0.020);
         VectorXr I(36);
@@ -60,7 +60,7 @@ int main() {
 
         //Kern->SetDepthLayerInterfaces( VectorXr::LinSpaced( 30, 3, 45.5 ) ); // nlay, low, high
         //10**np.linspace(np.log10(10),np.log10(19),10)
-        VectorXr interfaces = VectorXr::LinSpaced(31, std::log10(2), std::log10(50)); // 30 log spaced
+        VectorXr interfaces = VectorXr::LinSpaced(21, std::log10(2), std::log10(50)); // 30 log spaced
         for (int i=0; i<interfaces.size(); ++i) {
             interfaces(i) = std::pow(10, interfaces(i));
         }
