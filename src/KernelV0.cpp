@@ -160,7 +160,10 @@ namespace Lemma {
             IntegrateOnOctreeGrid( vtkOutput );
         }
         std::cout << "\rFinished KERNEL\n";
-        ofstream out = ofstream("k.dat");
+
+        std::ofstream out = std::ofstream("k.dat");
+        out << Interfaces.transpose() << std::endl;
+        out << PulseI.transpose() << std::endl;
         out << "#real\n";
         out << Kern.real() << std::endl;
         out << "#imag\n";

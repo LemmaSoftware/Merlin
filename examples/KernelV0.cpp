@@ -44,10 +44,11 @@ int main() {
 
         Kern->SetIntegrationSize( (Vector3r() << 200,200,200).finished() );
         Kern->SetIntegrationOrigin( (Vector3r() << 0,0,0).finished() );
-        Kern->SetTolerance( 1e-10 );
+        Kern->SetTolerance( 1e-9 );
 
         Kern->SetPulseDuration(0.020);
         VectorXr I(36);
+        // Pulses from Wyoming Red Buttes exp 0
         I << 397.4208916184016, 352.364477036168, 313.0112765842783, 278.37896394065376, 247.81424224324982,
              220.77925043190442, 196.76493264105017, 175.31662279234038, 156.0044839325404, 138.73983004230124,
              123.42064612625474, 109.82713394836259, 97.76534468972267, 87.06061858367781, 77.56000002944572, 69.1280780096311,
@@ -59,20 +60,30 @@ int main() {
         Kern->SetPulseCurrent( I ); // nbins, low, high
 
         //Kern->SetDepthLayerInterfaces( VectorXr::LinSpaced( 30, 3, 45.5 ) ); // nlay, low, high
-        //10**np.linspace(np.log10(10),np.log10(19),10)
-        VectorXr interfaces = VectorXr::LinSpaced(21, std::log10(2), std::log10(50)); // 30 log spaced
-        for (int i=0; i<interfaces.size(); ++i) {
-            interfaces(i) = std::pow(10, interfaces(i));
+        VectorXr interfaces = VectorXr::LinSpaced( 31, 1, 45.5 ); // nlay, low, high
+        Real thick = .5;
+        for (int ilay=1; ilay<interfaces.size(); ++ilay) {
+            interfaces(ilay) = interfaces(ilay-1) + thick;
+            thick *= 1.1;
         }
+        // TODO log spacing results in a strange transposition of the matrix? Difficult to understand
+        //10**np.linspace(np.log10(10),np.log10(19),10)
+//         VectorXr interfaces2 = VectorXr::LinSpaced(31, std::log10(2), std::log10(150)); // 30 log spaced
+//         for (int i=0; i<interfaces2.size(); ++i) {
+//             interfaces(i) = std::pow(10, interfaces2(i));
+//         }
+//         std::cout << interfaces << std::endl;
+
         Kern->SetDepthLayerInterfaces( interfaces ); // nlay, low, high
 
     // We could, I suppose, take the earth model in here? For non-linear that
     // may be more natural to work with?
-    std::vector<std::string> tx = {std::string("Coil 1"), std::string("Coil 2") };
+    //std::vector<std::string> tx = {std::string("Coil 1"), std::string("Coil 2") };
+    std::vector<std::string> tx = {std::string("Coil 1")};
     std::vector<std::string> rx = {std::string("Coil 1")};
     Kern->CalculateK0( tx, rx, true );
 
-    ofstream out = ofstream("k.yaml");
+    std::ofstream out = std::ofstream("k.yaml");
     out << *Kern;
     out.close();
 }
