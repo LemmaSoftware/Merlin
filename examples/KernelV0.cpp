@@ -22,7 +22,10 @@ using namespace Lemma;
 
 std::shared_ptr<PolygonalWireAntenna> CircularLoop ( int nd, Real radius, Real Offsetx, Real Offsety ) ;
 
-int main() {
+int main(int argc, char** argv) {
+
+    Real offset = atof(argv[1]);
+        std::cout << offset << std::endl;
 
 	auto earth = LayeredEarthEM::NewSP();
 		earth->SetNumberOfLayers(3);
@@ -34,7 +37,7 @@ int main() {
 
     // Transmitter loops
     auto Tx1 = CircularLoop(21, 15, 100, 100);
-    auto Tx2 = CircularLoop(21, 15, 100, 124.8);
+    auto Tx2 = CircularLoop(21, 15, 100, 100 + offset); // 100, 115, 124.8, 130
     //auto Tx1 = CircularLoop(60, 15, 0, 0); // was 60
 
     auto Kern = KernelV0::NewSP();
@@ -44,7 +47,7 @@ int main() {
 
         Kern->SetIntegrationSize( (Vector3r() << 200,200,200).finished() );
         Kern->SetIntegrationOrigin( (Vector3r() << 0,0,0).finished() );
-        Kern->SetTolerance( 1e-9 );
+        Kern->SetTolerance( 1e-12 );
 
         Kern->SetPulseDuration(0.020);
         VectorXr I(36);
@@ -66,24 +69,25 @@ int main() {
             interfaces(ilay) = interfaces(ilay-1) + thick;
             thick *= 1.1;
         }
-        // TODO log spacing results in a strange transposition of the matrix? Difficult to understand
-        //10**np.linspace(np.log10(10),np.log10(19),10)
-//         VectorXr interfaces2 = VectorXr::LinSpaced(31, std::log10(2), std::log10(150)); // 30 log spaced
-//         for (int i=0; i<interfaces2.size(); ++i) {
-//             interfaces(i) = std::pow(10, interfaces2(i));
-//         }
-//         std::cout << interfaces << std::endl;
-
         Kern->SetDepthLayerInterfaces( interfaces ); // nlay, low, high
 
     // We could, I suppose, take the earth model in here? For non-linear that
     // may be more natural to work with?
-    //std::vector<std::string> tx = {std::string("Coil 1"), std::string("Coil 2") };
-    std::vector<std::string> tx = {std::string("Coil 1")};
+    std::vector<std::string> tx = {std::string("Coil 1"), std::string("Coil 2") };
+    //std::vector<std::string> tx = {std::string("Coil 1")};
     std::vector<std::string> rx = {std::string("Coil 1")};
-    Kern->CalculateK0( tx, rx, true );
+    Kern->CalculateK0( tx, rx, false );
 
-    std::ofstream out = std::ofstream("k.yaml");
+    std::ofstream dout = std::ofstream(std::string("k-")+ std::string(argv[1])+ std::string(".dat"));
+        dout << interfaces.transpose() << std::endl;
+        dout << I.transpose() << std::endl;
+        dout << "#real\n";
+        dout << Kern->GetKernel().real() << std::endl;
+        dout << "#imag\n";
+        dout << Kern->GetKernel().imag() << std::endl;
+        dout.close();
+
+    std::ofstream out = std::ofstream(std::string("k-")+std::string(argv[1])+std::string(".yaml"));
     out << *Kern;
     out.close();
 }

@@ -127,6 +127,13 @@ namespace Lemma {
         }		// -----  end of method KernelV0::get_SigmaModel  -----
 
         /**
+         * @return the kernel matrix
+         */
+        inline MatrixXcr GetKernel ( ) {
+            return Kern;
+        }
+
+        /**
          * @param[in] value the 1D-EM model used for calculations
          */
         inline void SetLayeredEarthEM ( std::shared_ptr< LayeredEarthEM > value ) {

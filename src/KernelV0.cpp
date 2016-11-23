@@ -154,21 +154,12 @@ namespace Lemma {
         std::cout << "Calculating K0 kernel\n";
         Kern = MatrixXcr::Zero( Interfaces.size()-1, PulseI.size() );
         for (ilay=0; ilay<Interfaces.size()-1; ++ilay) {
-            std::cout << "Layer " << ilay << "\tfrom " << Interfaces(ilay) <<" to "<< Interfaces(ilay+1) << std::endl; //<< " q " << iq << std::endl;
+            std::cout << "Layer " << ilay << "\tfrom " << Interfaces(ilay) <<" to "<< Interfaces(ilay+1) << std::endl;
             Size(2) = Interfaces(ilay+1) - Interfaces(ilay);
             Origin(2) = Interfaces(ilay);
             IntegrateOnOctreeGrid( vtkOutput );
         }
-        std::cout << "\rFinished KERNEL\n";
-
-        std::ofstream out = std::ofstream("k.dat");
-        out << Interfaces.transpose() << std::endl;
-        out << PulseI.transpose() << std::endl;
-        out << "#real\n";
-        out << Kern.real() << std::endl;
-        out << "#imag\n";
-        out << Kern.imag() << std::endl;
-        out.close();
+        std::cout << "\nFinished KERNEL\n";
     }
 
     //--------------------------------------------------------------------------------------
