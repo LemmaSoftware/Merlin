@@ -18,14 +18,14 @@
  */
 
 
-#include "KernelV0.h"
+#include "Coupling.h"
 #include "FieldPoints.h"
 
 namespace Lemma {
 
     // ====================  FRIEND METHODS  =====================
 
-    std::ostream &operator << (std::ostream &stream, const KernelV0 &ob) {
+    std::ostream &operator << (std::ostream &stream, const Coupling &ob) {
         stream << ob.Serialize()  << "\n---\n"; // End of doc ---
         return stream;
     }
@@ -33,46 +33,46 @@ namespace Lemma {
     // ====================  LIFECYCLE     =======================
 
     //--------------------------------------------------------------------------------------
-    //       Class:  KernelV0
-    //      Method:  KernelV0
+    //       Class:  Coupling
+    //      Method:  Coupling
     // Description:  constructor (locked)
     //--------------------------------------------------------------------------------------
-    KernelV0::KernelV0 (const ctor_key&) : LemmaObject( ) {
+    Coupling::Coupling (const ctor_key&) : LemmaObject( ) {
 
-    }  // -----  end of method KernelV0::KernelV0  (constructor)  -----
+    }  // -----  end of method Coupling::Coupling  (constructor)  -----
 
     //--------------------------------------------------------------------------------------
-    //       Class:  KernelV0
-    //      Method:  KernelV0
+    //       Class:  Coupling
+    //      Method:  Coupling
     // Description:  DeSerializing constructor (locked)
     //--------------------------------------------------------------------------------------
-    KernelV0::KernelV0 (const YAML::Node& node, const ctor_key&) : LemmaObject(node) {
+    Coupling::Coupling (const YAML::Node& node, const ctor_key&) : LemmaObject(node) {
 
-    }  // -----  end of method KernelV0::KernelV0  (constructor)  -----
+    }  // -----  end of method Coupling::Coupling  (constructor)  -----
 
     //--------------------------------------------------------------------------------------
-    //       Class:  KernelV0
+    //       Class:  Coupling
     //      Method:  NewSP()
     // Description:  public constructor returing a shared_ptr
     //--------------------------------------------------------------------------------------
-    std::shared_ptr< KernelV0 >  KernelV0::NewSP() {
-        return std::make_shared< KernelV0 >( ctor_key() );
+    std::shared_ptr< Coupling >  Coupling::NewSP() {
+        return std::make_shared< Coupling >( ctor_key() );
     }
 
     //--------------------------------------------------------------------------------------
-    //       Class:  KernelV0
-    //      Method:  ~KernelV0
+    //       Class:  Coupling
+    //      Method:  ~Coupling
     // Description:  destructor (protected)
     //--------------------------------------------------------------------------------------
-    KernelV0::~KernelV0 () {
+    Coupling::~Coupling () {
 
-    }  // -----  end of method KernelV0::~KernelV0  (destructor)  -----
+    }  // -----  end of method Coupling::~Coupling  (destructor)  -----
 
     //--------------------------------------------------------------------------------------
-    //       Class:  KernelV0
+    //       Class:  Coupling
     //      Method:  Serialize
     //--------------------------------------------------------------------------------------
-    YAML::Node  KernelV0::Serialize (  ) const {
+    YAML::Node  Coupling::Serialize (  ) const {
         YAML::Node node = LemmaObject::Serialize();
         node.SetTag( GetName() );
 
@@ -83,43 +83,30 @@ namespace Lemma {
         // LayeredEarthEM
         node["SigmaModel"] = SigmaModel->Serialize();
 
-        node["Larmor"] = Larmor;
-        node["Temperature"] = Temperature;
         node["tol"] = tol;
         node["minLevel"] = minLevel;
         node["maxLevel"] = maxLevel;
-        node["Taup"] = Taup;
 
-        node["PulseI"] = PulseI;
-        node["Interfaces"] = Interfaces;
-
-        for ( int ilay=0; ilay<Interfaces.size()-1; ++ilay ) {
-            node["Kern-" + to_string(ilay) ] = static_cast<VectorXcr>(Kern.row(ilay));
-        }
         return node;
-    }		// -----  end of method KernelV0::Serialize  -----
+    }		// -----  end of method Coupling::Serialize  -----
 
     //--------------------------------------------------------------------------------------
-    //       Class:  KernelV0
+    //       Class:  Coupling
     //      Method:  DeSerialize
     //--------------------------------------------------------------------------------------
-    std::shared_ptr<KernelV0> KernelV0::DeSerialize ( const YAML::Node& node  ) {
-        if (node.Tag() !=  "KernelV0" ) {
-            throw  DeSerializeTypeMismatch( "KernelV0", node.Tag());
+    std::shared_ptr<Coupling> Coupling::DeSerialize ( const YAML::Node& node  ) {
+        if (node.Tag() !=  "Coupling" ) {
+            throw  DeSerializeTypeMismatch( "Coupling", node.Tag());
         }
-        return std::make_shared< KernelV0 > ( node, ctor_key() );
-    }		// -----  end of method KernelV0::DeSerialize  -----
+        return std::make_shared< Coupling > ( node, ctor_key() );
+    }		// -----  end of method Coupling::DeSerialize  -----
 
     //--------------------------------------------------------------------------------------
-    //       Class:  KernelV0
+    //       Class:  Coupling
     //      Method:  DeSerialize
     //--------------------------------------------------------------------------------------
-    void KernelV0::CalculateK0 (const std::vector< std::string>& Tx, const std::vector<std::string >& Rx,
+    Complex Coupling::Calculate (const std::vector< std::string>& Tx, const std::vector<std::string >& Rx,
             bool vtkOutput ) {
-
-        // Set up
-        Larmor = SigmaModel->GetMagneticFieldMagnitude()*GAMMA; // in rad  2246.*2.*PI;
-
         // All EM calculations will share same field points
         cpoints = FieldPoints::NewSP();
             cpoints->SetNumberOfPoints(8);
@@ -150,30 +137,24 @@ namespace Lemma {
                     TxRx[rx]->SetCurrent(1.);
             }
         }
-
-        std::cout << "Calculating K0 kernel\n";
-        Kern = MatrixXcr::Zero( Interfaces.size()-1, PulseI.size() );
-        for (ilay=0; ilay<Interfaces.size()-1; ++ilay) {
-            std::cout << "Layer " << ilay << "\tfrom " << Interfaces(ilay) <<" to "<< Interfaces(ilay+1) << std::endl;
-            Size(2) = Interfaces(ilay+1) - Interfaces(ilay);
-            Origin(2) = Interfaces(ilay);
-            IntegrateOnOctreeGrid( vtkOutput );
-        }
+        SUM = 0;
+        IntegrateOnOctreeGrid( vtkOutput );
         std::cout << "\nFinished KERNEL\n";
+        return SUM;
     }
 
     //--------------------------------------------------------------------------------------
-    //       Class:  KernelV0
+    //       Class:  Coupling
     //      Method:  IntegrateOnOctreeGrid
     //--------------------------------------------------------------------------------------
-    void KernelV0::IntegrateOnOctreeGrid( bool vtkOutput) {
+    void Coupling::IntegrateOnOctreeGrid( bool vtkOutput) {
 
         Vector3r cpos = Origin + Size/2.;
 
         VOLSUM = 0;
         nleaves = 0;
         if (!vtkOutput) {
-            EvaluateKids( Size, 0, cpos, VectorXcr::Ones(PulseI.size()) );
+            EvaluateKids( Size, 0, cpos, Complex(100.));
         } else {
         #ifdef LEMMAUSEVTK
             vtkHyperOctree* oct = vtkHyperOctree::New();
@@ -262,87 +243,19 @@ namespace Lemma {
     }
 
     //--------------------------------------------------------------------------------------
-    //       Class:  KernelV0
+    //       Class:  Coupling
     //      Method:  f
     //--------------------------------------------------------------------------------------
-    VectorXcr KernelV0::f( const Vector3r& r, const Real& volume, const Vector3cr& Ht, const Vector3cr& Hr ) {
-
-        // Compute the elliptic fields
-        Vector3r B0hat = SigmaModel->GetMagneticFieldUnitVector();
-        Vector3r B0 = SigmaModel->GetMagneticField();
-
-        // Elliptic representation
-        EllipticB EBT = EllipticFieldRep(MU0*Ht, B0hat);
-        EllipticB EBR = EllipticFieldRep(MU0*Hr, B0hat);
-
-        // Compute Mn0
-        Vector3r Mn0 = ComputeMn0(1.0, B0);
-        Real Mn0Abs = Mn0.norm();
-
-        // Compute phase delay
-        // TODO add transmiiter current phase and delay induced apparent time phase!
-        Complex PhaseTerm = EBR.bhat.dot(EBT.bhat) + (B0hat.dot(EBR.bhat.cross(EBT.bhat) ));
-        Complex ejztr = std::exp(Complex(0, EBR.zeta + EBT.zeta));
-
-        // Calcuate vector of all responses
-        VectorXcr F = VectorXcr::Zero( PulseI.size() );
-        for (int iq=0; iq<PulseI.size(); ++iq) {
-            // Compute the tipping angle
-            Real sintheta = std::sin(0.5*GAMMA*PulseI(iq)*Taup*std::abs(EBT.alpha-EBT.beta));
-            F(iq) = -volume*Complex(0,Larmor)*Mn0Abs*(EBR.alpha+EBR.beta)*ejztr*sintheta*PhaseTerm;
-        }
-        return F;
-    }
-
-//     //--------------------------------------------------------------------------------------
-//     //       Class:  KernelV0
-//     //      Method:  ComputeV0Cell
-//     //--------------------------------------------------------------------------------------
-//     Complex KernelV0::ComputeV0Cell(const EllipticB& EBT, const EllipticB& EBR,
-//                 const Real& sintheta, const Real& phase, const Real& Mn0Abs,
-//                 const Real& vol) {
-//         // earth response of receiver adjoint field
-//         Vector3r B0hat = SigmaModel->GetMagneticFieldUnitVector();
-//         Complex ejztr = std::exp(Complex(0, EBR.zeta + EBT.zeta));
-//         Complex PhaseTerm = EBR.bhat.dot(EBT.bhat) + (B0hat.dot(EBR.bhat.cross(EBT.bhat) ));
-//         return -vol*Complex(0,Larmor)*Mn0Abs*(EBR.alpha+EBR.beta)*ejztr*sintheta*PhaseTerm;
-//     }
-
-    //--------------------------------------------------------------------------------------
-    //       Class:  KernelV0
-    //      Method:  ComputeV0Cell
-    //--------------------------------------------------------------------------------------
-    Vector3r KernelV0::ComputeMn0(const Real& Porosity, const Vector3r& B0) {
-        Real chi_n = NH2O*((GAMMA*GAMMA*HBAR*HBAR)/(4.*KB*Temperature));
-        return chi_n*Porosity*B0;
+    Complex Coupling::f( const Vector3r& r, const Real& volume, const Vector3cr& Ht, const Vector3cr& Hr ) {
+        return volume*Ht.dot(Hr);
     }
 
     //--------------------------------------------------------------------------------------
-    //       Class:  KernelV0
-    //      Method:  ComputeV0Cell
-    //--------------------------------------------------------------------------------------
-    EllipticB KernelV0::EllipticFieldRep (const Vector3cr& B, const Vector3r& B0hat) {
-        EllipticB ElipB = EllipticB();
-        Vector3cr Bperp = B.array() - B0hat.dot(B)*B0hat.array();
-        Real BperpNorm = Bperp.norm();
-        Complex Bp2 = Bperp.transpose() * Bperp;
-        VectorXcr iB0 = Complex(0,1)*B0hat.cast<Complex>().array();
-        ElipB.eizt = std::sqrt(Bp2 / std::abs(Bp2));
-        ElipB.alpha = INVSQRT2*std::sqrt(BperpNorm*BperpNorm + std::abs(Bp2));
-        ElipB.beta = sgn(std::real(iB0.dot(Bperp.cross(Bperp.conjugate())))) *
-                (INVSQRT2)*std::sqrt(std::abs(BperpNorm*BperpNorm-std::abs(Bp2)));
-        ElipB.bhat = ((Real)1./ElipB.alpha)*(((Real)1./ElipB.eizt)*Bperp.array()).real().array();
-        ElipB.bhatp = B0hat.cross(ElipB.bhat);
-        ElipB.zeta = std::real(std::log(ElipB.eizt)/Complex(0,1));
-        return ElipB;
-    }
-
-    //--------------------------------------------------------------------------------------
-    //       Class:  KernelV0
+    //       Class:  Coupling
     //      Method:  EvaluateKids
     //--------------------------------------------------------------------------------------
-    void KernelV0::EvaluateKids( const Vector3r& size, const int& level, const Vector3r& cpos,
-        const VectorXcr& parentVal ) {
+    void Coupling::EvaluateKids( const Vector3r& size, const int& level, const Vector3r& cpos,
+        const Complex& parentVal ) {
 
         std::cout << "\r" << (int)(1e2*VOLSUM/(Size[0]*Size[1]*Size[2])) << "\t" << nleaves;
         //std::cout.flush();
@@ -363,7 +276,7 @@ namespace Lemma {
                         0, step[1], step[2],
                   step[0], step[1], step[2] ).finished();
 
-        MatrixXcr kvals(8, PulseI.size());       // individual kernel vals
+        VectorXcr kvals(8);       // individual kernel vals
         cpoints->ClearFields();
         for (int ichild=0; ichild<8; ++ichild) {
             Vector3r cp = pos;    // Eigen complains about combining these
@@ -395,34 +308,34 @@ namespace Lemma {
         for (int ichild=0; ichild<8; ++ichild) {
             Vector3r cp = pos;    // Eigen complains about combining these
             cp += posadd.row(ichild);
-            kvals.row(ichild) = f(cp, vol, Ht.col(ichild), Hr.col(ichild));
+            kvals(ichild) = f(cp, vol, Ht.col(ichild), Hr.col(ichild));
         }
 
-        VectorXcr ksum = kvals.colwise().sum();     // Kernel sum
+        Complex ksum = kvals.sum();     // Kernel sum
         // Evaluate whether or not furthur splitting is needed
-        if ( ((ksum - parentVal).array().abs() > tol).any() || level < minLevel && level < maxLevel ) {
+        if ( std::abs(ksum-parentVal) > tol || level < minLevel && level < maxLevel ) {
             // Not a leaf dive further in
             for (int ichild=0; ichild<8; ++ichild) {
                 Vector3r cp = pos; // Eigen complains about combining these
                 cp += posadd.row(ichild);
-                EvaluateKids( size, level+1, cp, kvals.row(ichild) );
+                EvaluateKids( size, level+1, cp, kvals(ichild) );
             }
             return; // not leaf
         }
         // implicit else, is a leaf
-        Kern.row(ilay) += ksum;
-        VOLSUM += 8.*vol;
-        nleaves += 1;
+        SUM += ksum;
+        VOLSUM  += 8.*vol;
+        nleaves += 1; // could say += 8 just as fairly
         return;     // is leaf
     }
 
     #ifdef LEMMAUSEVTK
     //--------------------------------------------------------------------------------------
-    //       Class:  KernelV0
+    //       Class:  Coupling
     //      Method:  EvaluateKids2 -- same as Evaluate Kids, but include VTK octree generation
     //--------------------------------------------------------------------------------------
-    void KernelV0::EvaluateKids2( const Vector3r& size, const int& level, const Vector3r& cpos,
-        const VectorXcr& parentVal, vtkHyperOctree* oct, vtkHyperOctreeCursor* curse) {
+    void Coupling::EvaluateKids2( const Vector3r& size, const int& level, const Vector3r& cpos,
+        const Complex& parentVal, vtkHyperOctree* oct, vtkHyperOctreeCursor* curse) {
 
         std::cout << "\r" << (int)(1e2*VOLSUM/(Size[0]*Size[1]*Size[2])) << "\t" << nleaves;
         std::cout.flush();
@@ -443,7 +356,7 @@ namespace Lemma {
                         0, step[1], step[2],
                   step[0], step[1], step[2] ).finished();
 
-        MatrixXcr kvals(8, PulseI.size());       // individual kernel vals
+        VectorXcr kvals(8);       // individual kernel vals
         cpoints->ClearFields();
         for (int ichild=0; ichild<8; ++ichild) {
             Vector3r cp = pos;    // Eigen complains about combining these
@@ -475,12 +388,12 @@ namespace Lemma {
         for (int ichild=0; ichild<8; ++ichild) {
             Vector3r cp = pos;    // Eigen complains about combining these
             cp += posadd.row(ichild);
-            kvals.row(ichild) = f(cp, vol, Ht.col(ichild), Hr.col(ichild));
+            kvals(ichild) = f(cp, vol, Ht.col(ichild), Hr.col(ichild));
         }
 
-        VectorXcr ksum = kvals.colwise().sum();     // Kernel sum
+        Complex ksum = kvals.sum();     // Kernel sum
         // Evaluate whether or not furthur splitting is needed
-        if ( ((ksum - parentVal).array().abs() > tol).any() || level < minLevel && level < maxLevel ) {
+        if ( std::abs(ksum-parentVal) > tol || level < minLevel && level < maxLevel ) {
             oct->SubdivideLeaf(curse);
             for (int ichild=0; ichild<8; ++ichild) {
                 curse->ToChild(ichild);
@@ -511,10 +424,10 @@ namespace Lemma {
     }
 
     //--------------------------------------------------------------------------------------
-    //       Class:  KernelV0
+    //       Class:  Coupling
     //      Method:  GetPosition
     //--------------------------------------------------------------------------------------
-    void KernelV0::GetPosition( vtkHyperOctreeCursor* Cursor, Real* p ) {
+    void Coupling::GetPosition( vtkHyperOctreeCursor* Cursor, Real* p ) {
         Real ratio=1.0/(1<<(Cursor->GetCurrentLevel()));
         //step  = ((Size).array() / std::pow(2.,Cursor->GetCurrentLevel()));
         p[0]=(Cursor->GetIndex(0)+.5)*ratio*this->Size[0]+this->Origin[0] ;//+ .5*step[0];

@@ -22,7 +22,7 @@ ax1 =  fig.add_axes( [.100,.125,.335,.775] )
 ax2 =  fig.add_axes( [.465,.125,.335,.775] , sharex=ax1, sharey=ax1 )
 axcb = fig.add_axes( [.835,.125,.040,.775] )
 
-ccmap = "seismic" # RdBu
+ccmap = "coolwarm" # RdBu
 
 # Real plot
 ax1.pcolormesh(X, Y, K[0:nx//2].T, cmap=ccmap, vmin=-np.max(np.abs(K)), vmax=np.max(np.abs(K)))

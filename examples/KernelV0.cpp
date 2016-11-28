@@ -47,10 +47,12 @@ int main(int argc, char** argv) {
 
         Kern->SetIntegrationSize( (Vector3r() << 200,200,200).finished() );
         Kern->SetIntegrationOrigin( (Vector3r() << 0,0,0).finished() );
-        Kern->SetTolerance( 1e-12 );
+        Kern->SetTolerance( 1e-12 ); // 1e-12
 
         Kern->SetPulseDuration(0.020);
         VectorXr I(36);
+
+        // off from VC by 1.075926340216996
         // Pulses from Wyoming Red Buttes exp 0
         I << 397.4208916184016, 352.364477036168, 313.0112765842783, 278.37896394065376, 247.81424224324982,
              220.77925043190442, 196.76493264105017, 175.31662279234038, 156.0044839325404, 138.73983004230124,
@@ -63,22 +65,22 @@ int main(int argc, char** argv) {
         Kern->SetPulseCurrent( I ); // nbins, low, high
 
         //Kern->SetDepthLayerInterfaces( VectorXr::LinSpaced( 30, 3, 45.5 ) ); // nlay, low, high
-        VectorXr interfaces = VectorXr::LinSpaced( 31, 1, 45.5 ); // nlay, low, high
+        VectorXr interfaces = VectorXr::LinSpaced( 41, .5, 45.5 ); // nlay, low, high
         Real thick = .5;
         for (int ilay=1; ilay<interfaces.size(); ++ilay) {
             interfaces(ilay) = interfaces(ilay-1) + thick;
-            thick *= 1.1;
+            thick *= 1.05;
         }
         Kern->SetDepthLayerInterfaces( interfaces ); // nlay, low, high
 
     // We could, I suppose, take the earth model in here? For non-linear that
     // may be more natural to work with?
     std::vector<std::string> tx = {std::string("Coil 1"), std::string("Coil 2") };
-    //std::vector<std::string> tx = {std::string("Coil 1")};
     std::vector<std::string> rx = {std::string("Coil 1")};
     Kern->CalculateK0( tx, rx, false );
 
     std::ofstream dout = std::ofstream(std::string("k-")+ std::string(argv[1])+ std::string(".dat"));
+    //std::ofstream dout = std::ofstream(std::string("k-coincident.dat"));
         dout << interfaces.transpose() << std::endl;
         dout << I.transpose() << std::endl;
         dout << "#real\n";
@@ -88,6 +90,7 @@ int main(int argc, char** argv) {
         dout.close();
 
     std::ofstream out = std::ofstream(std::string("k-")+std::string(argv[1])+std::string(".yaml"));
+    //std::ofstream out = std::ofstream(std::string("k-coincident.yaml"));
     out << *Kern;
     out.close();
 }
