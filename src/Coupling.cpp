@@ -163,9 +163,7 @@ namespace Lemma {
                 oct->SetSize( Size(0), Size(1), Size(2) );
             vtkHyperOctreeCursor* curse = oct->NewCellCursor();
                 curse->ToRoot();
-            EvaluateKids2( Size, 0, cpos, VectorXcr::Ones(PulseI.size()), oct, curse );
-
-            for (int iq=0; iq<PulseI.size(); ++iq) {
+            EvaluateKids2( Size, 0, cpos, Complex(100.0), oct, curse );
 
             // Fill in leaf data
             vtkDoubleArray* kr = vtkDoubleArray::New();
@@ -190,9 +188,9 @@ namespace Lemma {
 
             //Real LeafVol(0);
             for (auto leaf : LeafDict) {
-                kr->InsertTuple1( leaf.first, std::real(leaf.second(iq)) );
-                ki->InsertTuple1( leaf.first, std::imag(leaf.second(iq)) );
-                km->InsertTuple1( leaf.first, std::abs(leaf.second(iq)) );
+                kr->InsertTuple1( leaf.first, std::real(leaf.second) );
+                ki->InsertTuple1( leaf.first, std::imag(leaf.second) );
+                km->InsertTuple1( leaf.first, std::abs(leaf.second) );
                 kid->InsertTuple1( leaf.first, leaf.first );
                 //LeafVol += std::real(leaf.second);
             }
@@ -211,8 +209,7 @@ namespace Lemma {
             auto write = vtkXMLHyperOctreeWriter::New();
                 //write.SetDataModeToAscii()
                 write->SetInputData(oct);
-                std::string fname = std::string("octree-") + to_string(ilay)
-                                  + std::string("-") + to_string(iq) + std::string(".vto");
+                std::string fname = std::string("octree-couple") + std::string(".vto");
                 write->SetFileName(fname.c_str());
                 write->Write();
                 write->Delete();
@@ -228,8 +225,6 @@ namespace Lemma {
             kr->Delete();
             ki->Delete();
             km->Delete();
-
-            }
 
             curse->Delete();
             oct->Delete();
@@ -248,6 +243,7 @@ namespace Lemma {
     //--------------------------------------------------------------------------------------
     Complex Coupling::f( const Vector3r& r, const Real& volume, const Vector3cr& Ht, const Vector3cr& Hr ) {
         return volume*Ht.dot(Hr);
+        //return Ht.dot(Hr);
     }
 
     //--------------------------------------------------------------------------------------
@@ -258,7 +254,7 @@ namespace Lemma {
         const Complex& parentVal ) {
 
         std::cout << "\r" << (int)(1e2*VOLSUM/(Size[0]*Size[1]*Size[2])) << "\t" << nleaves;
-        //std::cout.flush();
+        std::cout.flush();
 
         // Next level step, interested in one level below
         // bitshift requires one extra, faster than, and equivalent to std::pow(2, level+1)
@@ -410,14 +406,14 @@ namespace Lemma {
                 }
                 */
                 /* End of position test */
-                EvaluateKids2( size, level+1, cp, kvals.row(ichild), oct, curse );
+                EvaluateKids2( size, level+1, cp, kvals(ichild), oct, curse );
                 curse->ToParent();
             }
             return;  // not a leaf
         }
         LeafDict[curse->GetLeafId()] = ksum/(8.*vol);
         LeafDictIdx[curse->GetLeafId()] = nleaves;
-        Kern.row(ilay) += ksum;
+        SUM += ksum;
         VOLSUM += 8*vol;
         nleaves += 1;
         return;     // is a leaf

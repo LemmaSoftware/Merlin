@@ -213,7 +213,7 @@ namespace Lemma {
          *  HyperOctree, which is useful for visualization.
          */
         void EvaluateKids2(  const Vector3r& size, const int& level, const Vector3r& cpos,
-                            const VectorXcr& parentVal, vtkHyperOctree* octree, vtkHyperOctreeCursor* curse );
+                            const Complex& parentVal, vtkHyperOctree* octree, vtkHyperOctreeCursor* curse );
 
         void GetPosition( vtkHyperOctreeCursor* Cursor, Real* p );
         #endif
@@ -241,7 +241,7 @@ namespace Lemma {
         std::map< std::string , std::shared_ptr< EMEarth1D > >             EMEarths;
 
         #ifdef LEMMAUSEVTK
-        std::map< int, VectorXcr  >               LeafDict;
+        std::map< int, Complex  >                 LeafDict;
         std::map< int, int     >                  LeafDictIdx;
         std::map< int, Real     >                 LeafDictErr;
         #endif

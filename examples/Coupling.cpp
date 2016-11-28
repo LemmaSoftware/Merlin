@@ -44,13 +44,13 @@ int main(int argc, char** argv) {
         Kern->PushCoil( "Coil 2", Tx2 );
         Kern->SetLayeredEarthEM( earth );
 
-        Kern->SetIntegrationSize( (Vector3r() << 200,200,200).finished() );
-        Kern->SetIntegrationOrigin( (Vector3r() << 0,0,2).finished() );
+        Kern->SetIntegrationSize( (Vector3r() << 200,200,50).finished() );
+        Kern->SetIntegrationOrigin( (Vector3r() << 0,0,5).finished() );
         Kern->SetTolerance( 1e-7 ); // 1e-12
 
     std::vector<std::string> tx = {std::string("Coil 1")};
     std::vector<std::string> rx = {std::string("Coil 2")};
-    VectorXr Offsets = VectorXr::LinSpaced(60,0.25,60); // nbins, low, high
+    VectorXr Offsets = VectorXr::LinSpaced(60, 5.25, 60); // nbins, low, high
 
     auto outfile = std::ofstream("coupling.dat");
     for (int ii=0; ii< Offsets.size(); ++ii) {
