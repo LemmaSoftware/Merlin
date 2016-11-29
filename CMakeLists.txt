@@ -24,7 +24,7 @@ endif()
 
 # Install
 install ( TARGETS merlin DESTINATION ${CMAKE_INSTALL_PREFIX}/lib )
-install ( FILES include/MERLIN  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/Lemma ) 
+install ( FILES include/Merlin  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/Lemma ) 
 install ( DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include/Lemma  FILES_MATCHING PATTERN "*.h")
 
 #install ( DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include/Lemma/  FILES_MATCHING PATTERN "FDEM1D")

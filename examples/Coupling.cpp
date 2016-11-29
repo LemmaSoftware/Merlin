@@ -20,49 +20,65 @@
 #include <Merlin>
 using namespace Lemma;
 
-std::shared_ptr<PolygonalWireAntenna> CircularLoop ( int nd, Real radius, Real Offsetx, Real Offsety ) ;
-void MoveLoop( std::shared_ptr<PolygonalWireAntenna> Loop, int nd, Real Radius, Real Offsetx, Real Offsety );
+static constexpr Real GAMMA = 2.67518e8;                  // MKS units
+
+std::shared_ptr<PolygonalWireAntenna> CircularLoop ( int nd, Real radius, Real Offsetx, Real Offsety, Real wL ) ;
+void MoveLoop( std::shared_ptr<PolygonalWireAntenna> Loop, int nd, Real Radius, Real Offsetx, Real Offsety, Real wL );
 
 int main(int argc, char** argv) {
 
-    Real offset = atof(argv[1]);
-
-	auto earth = LayeredEarthEM::NewSP();
-		earth->SetNumberOfLayers(3);
-		earth->SetLayerConductivity( (VectorXcr(3) << Complex(0.,0), Complex(1./50.,0), Complex(1./100.)).finished() );
-		earth->SetLayerThickness( (VectorXr(1) << 10).finished() );
-        // Set mag field info
-        // From NOAA, Laramie WY, June 9 2016, aligned with mag. north
-        earth->SetMagneticFieldIncDecMag( 67, 0, 52750, NANOTESLA );
+    if ( argc < 2 ) {
+        std::cout << "Calculates the coupling between two sNMR loops at the Larmor frequency. Usage\n"
+                  << "\t./Coupling   EarthModel.yaml" << std::endl;
+        exit(0);
+    }
+    //Real offset = atof(argv[1]);
+    auto earth = LayeredEarthEM::DeSerialize( YAML::LoadFile(argv[1]) );
+    Real Larmor = earth->GetMagneticFieldMagnitude()*GAMMA/(2*PI);
+//  RedButtes model, also how you can generate your own files
+// 	auto earth = LayeredEarthEM::NewSP();
+// 		earth->SetNumberOfLayers(3);
+// 		earth->SetLayerConductivity( (VectorXcr(3) << Complex(0.,0), Complex(1./50.,0), Complex(1./100.)).finished() );
+// 		earth->SetLayerThickness( (VectorXr(1) << 10).finished() );
+//         // Set mag field info
+//         // From NOAA, Laramie WY, June 9 2016, aligned with mag. north
+//         earth->SetMagneticFieldIncDecMag( 67, 0, 52750, NANOTESLA );
+//     auto sig = std::ofstream("SigmaModel.yaml");
+//         sig << *earth << std::endl;
+//         sig.close();
 
     // Transmitter loops
-    auto Tx1 = CircularLoop(21, 15, 100, 100);
-    auto Tx2 = CircularLoop(21, 15, 100, 100 + offset);
+    auto Tx1 = CircularLoop(21, 15, 100, 75, Larmor);
+    auto Tx2 = CircularLoop(21, 15, 100, 75, Larmor); // initially coincident
 
     auto Kern = Coupling::NewSP();
         Kern->PushCoil( "Coil 1", Tx1 );
         Kern->PushCoil( "Coil 2", Tx2 );
         Kern->SetLayeredEarthEM( earth );
 
-        Kern->SetIntegrationSize( (Vector3r() << 200,200,50).finished() );
-        Kern->SetIntegrationOrigin( (Vector3r() << 0,0,5).finished() );
-        Kern->SetTolerance( 1e-7 ); // 1e-12
+        Kern->SetIntegrationSize( (Vector3r() << 200,300,20).finished() );
+        Kern->SetIntegrationOrigin( (Vector3r() << 0,0,0.01).finished() );
+        Kern->SetTolerance( 1e-5 ); // 1e-12
 
     std::vector<std::string> tx = {std::string("Coil 1")};
     std::vector<std::string> rx = {std::string("Coil 2")};
-    VectorXr Offsets = VectorXr::LinSpaced(60, 5.25, 60); // nbins, low, high
+    VectorXr Offsets = VectorXr::LinSpaced(6, 22.00, 23.0); // nbins, low, high
 
     auto outfile = std::ofstream("coupling.dat");
     for (int ii=0; ii< Offsets.size(); ++ii) {
-        MoveLoop(Tx2, 21, 15, 100, 100 + Offsets(ii));
+        MoveLoop(Tx2, 21, 15, 100, 75 + Offsets(ii), Larmor);
+        #ifdef LEMMAUSEVTK
+        Complex coupling = Kern->Calculate( tx, rx, true );
+        #else
         Complex coupling = Kern->Calculate( tx, rx, false );
+        #endif
         std::cout << "coupling " << coupling << std::endl;
         outfile << Offsets(ii) << "\t" <<  std::real(coupling) << "\t" << std::imag(coupling) << std::endl;
     }
     outfile.close();
 }
 
-std::shared_ptr<Lemma::PolygonalWireAntenna> CircularLoop ( int nd, Real Radius, Real Offsetx, Real Offsety ) {
+std::shared_ptr<Lemma::PolygonalWireAntenna> CircularLoop ( int nd, Real Radius, Real Offsetx, Real Offsety, Real wL ) {
 
     auto Tx1 = Lemma::PolygonalWireAntenna::NewSP();
          Tx1->SetNumberOfPoints(nd);
@@ -72,17 +88,16 @@ std::shared_ptr<Lemma::PolygonalWireAntenna> CircularLoop ( int nd, Real Radius,
     for (ii=0; ii<nd; ++ii) {
         Tx1->SetPoint(ii, Vector3r(Offsetx+Radius*std::cos(range(ii)), Offsety+Radius*std::sin(range(ii)),  -1e-3));
     }
-    //Tx1->SetPoint(ii, Vector3r(Offsetx+Radius*1, Offsety,  -1e-3));
 
     Tx1->SetCurrent(1.);
     Tx1->SetNumberOfTurns(1);
     Tx1->SetNumberOfFrequencies(1);
-    Tx1->SetFrequency(0,2246);
+    Tx1->SetFrequency(0,wL);
 
     return Tx1;
 }
 
-void MoveLoop( std::shared_ptr<Lemma::PolygonalWireAntenna> Tx1, int nd, Real Radius, Real Offsetx, Real Offsety ) {
+void MoveLoop( std::shared_ptr<Lemma::PolygonalWireAntenna> Tx1, int nd, Real Radius, Real Offsetx, Real Offsety, Real wL ) {
 
     Tx1->SetNumberOfPoints(nd);
 
@@ -91,11 +106,10 @@ void MoveLoop( std::shared_ptr<Lemma::PolygonalWireAntenna> Tx1, int nd, Real Ra
     for (ii=0; ii<nd; ++ii) {
         Tx1->SetPoint(ii, Vector3r(Offsetx+Radius*std::cos(range(ii)), Offsety+Radius*std::sin(range(ii)),  -1e-3));
     }
-    //Tx1->SetPoint(ii, Vector3r(Offsetx+Radius*1, Offsety,  -1e-3));
 
     Tx1->SetCurrent(1.);
     Tx1->SetNumberOfTurns(1);
     Tx1->SetNumberOfFrequencies(1);
-    Tx1->SetFrequency(0,2246);
+    Tx1->SetFrequency(0,wL);
 
 }

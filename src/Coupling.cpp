@@ -107,9 +107,15 @@ namespace Lemma {
     //--------------------------------------------------------------------------------------
     Complex Coupling::Calculate (const std::vector< std::string>& Tx, const std::vector<std::string >& Rx,
             bool vtkOutput ) {
-        // All EM calculations will share same field points
-        cpoints = FieldPoints::NewSP();
-            cpoints->SetNumberOfPoints(8);
+
+        static bool first = false; // a little hackish
+        if (!first) {
+            // All EM calculations will share same field points
+            cpoints = FieldPoints::NewSP();
+                cpoints->SetNumberOfPoints(8);
+        }
+        first = true;
+
         for (auto tx : Tx) {
             // Set up EMEarth
             EMEarths[tx] = EMEarth1D::NewSP();
@@ -140,6 +146,7 @@ namespace Lemma {
         SUM = 0;
         IntegrateOnOctreeGrid( vtkOutput );
         std::cout << "\nFinished KERNEL\n";
+        EMEarths.clear();
         return SUM;
     }
 
@@ -147,7 +154,9 @@ namespace Lemma {
     //       Class:  Coupling
     //      Method:  IntegrateOnOctreeGrid
     //--------------------------------------------------------------------------------------
-    void Coupling::IntegrateOnOctreeGrid( bool vtkOutput) {
+    void Coupling::IntegrateOnOctreeGrid( bool vtkOutput ) {
+
+        static int count = 0;
 
         Vector3r cpos = Origin + Size/2.;
 
@@ -209,7 +218,7 @@ namespace Lemma {
             auto write = vtkXMLHyperOctreeWriter::New();
                 //write.SetDataModeToAscii()
                 write->SetInputData(oct);
-                std::string fname = std::string("octree-couple") + std::string(".vto");
+                std::string fname = std::string("octree-couple-") + to_string(count) + std::string(".vto");
                 write->SetFileName(fname.c_str());
                 write->Write();
                 write->Delete();
@@ -235,6 +244,7 @@ namespace Lemma {
         }
         std::cout << "\nVOLSUM=" << VOLSUM << "\tActual=" <<  Size(0)*Size(1)*Size(2)
                   << "\tDifference=" << VOLSUM - (Size(0)*Size(1)*Size(2)) <<  std::endl;
+        count += 1;
     }
 
     //--------------------------------------------------------------------------------------
@@ -242,8 +252,8 @@ namespace Lemma {
     //      Method:  f
     //--------------------------------------------------------------------------------------
     Complex Coupling::f( const Vector3r& r, const Real& volume, const Vector3cr& Ht, const Vector3cr& Hr ) {
-        return volume*Ht.dot(Hr);
-        //return Ht.dot(Hr);
+        //return volume*(Hr.norm() + Ht.norm());//.dot(Hr);
+        return volume * ( Ht.dot(Hr) );
     }
 
     //--------------------------------------------------------------------------------------
