@@ -26,7 +26,7 @@ std::shared_ptr<PolygonalWireAntenna> CircularLoop ( int nd, Real radius, Real O
 void MoveLoop( std::shared_ptr<PolygonalWireAntenna> Loop, int nd, Real Radius, Real Offsetx, Real Offsety, Real wL );
 
 int main(int argc, char** argv) {
-
+    /*
     if ( argc < 2 ) {
         std::cout << "Calculates the coupling between two sNMR loops at the Larmor frequency. Usage\n"
                   << "\t./Coupling   EarthModel.yaml" << std::endl;
@@ -34,39 +34,42 @@ int main(int argc, char** argv) {
     }
     //Real offset = atof(argv[1]);
     auto earth = LayeredEarthEM::DeSerialize( YAML::LoadFile(argv[1]) );
-    Real Larmor = earth->GetMagneticFieldMagnitude()*GAMMA/(2*PI);
-//  RedButtes model, also how you can generate your own files
-// 	auto earth = LayeredEarthEM::NewSP();
-// 		earth->SetNumberOfLayers(3);
-// 		earth->SetLayerConductivity( (VectorXcr(3) << Complex(0.,0), Complex(1./50.,0), Complex(1./100.)).finished() );
-// 		earth->SetLayerThickness( (VectorXr(1) << 10).finished() );
-//         // Set mag field info
-//         // From NOAA, Laramie WY, June 9 2016, aligned with mag. north
-//         earth->SetMagneticFieldIncDecMag( 67, 0, 52750, NANOTESLA );
+    */
+    // RedButtes model, also how you can generate your own files
+	auto earth = LayeredEarthEM::NewSP();
+		earth->SetNumberOfLayers(3);
+		//earth->SetLayerConductivity( (VectorXcr(3) << Complex(0.,0), Complex(1./50.,0), Complex(1./100.)).finished() );
+		earth->SetLayerConductivity( (VectorXcr(3) << Complex(0.,0), Complex(1./7.,0), Complex(1./100.)).finished() );
+		earth->SetLayerThickness( (VectorXr(1) << 10).finished() );
+        // Set mag field info
+        // From NOAA, Laramie WY, June 9 2016, aligned with mag. north
+        earth->SetMagneticFieldIncDecMag( 67, 0, 52750, NANOTESLA );
 //     auto sig = std::ofstream("SigmaModel.yaml");
 //         sig << *earth << std::endl;
 //         sig.close();
 
+    Real Larmor = earth->GetMagneticFieldMagnitude()*GAMMA/(2*PI);
+
     // Transmitter loops
-    auto Tx1 = CircularLoop(21, 15, 100, 75, Larmor);
-    auto Tx2 = CircularLoop(21, 15, 100, 75, Larmor); // initially coincident
+    auto Tx1 = CircularLoop(21, 15, 50, 50, Larmor);
+    auto Tx2 = CircularLoop(21, 15, 50, 50, Larmor); // initially coincident
 
     auto Kern = Coupling::NewSP();
         Kern->PushCoil( "Coil 1", Tx1 );
         Kern->PushCoil( "Coil 2", Tx2 );
         Kern->SetLayeredEarthEM( earth );
 
-        Kern->SetIntegrationSize( (Vector3r() << 200,300,20).finished() );
+        Kern->SetIntegrationSize( (Vector3r() << 50,100,20).finished() );
         Kern->SetIntegrationOrigin( (Vector3r() << 0,0,0.01).finished() );
-        Kern->SetTolerance( 1e-5 ); // 1e-12
+        Kern->SetTolerance( 1e-2 ); // 1e-12
 
-    std::vector<std::string> tx = {std::string("Coil 1")};
+    std::vector<std::string> tx = {std::string("Coil 1")};//,std::string("Coil 2")};
     std::vector<std::string> rx = {std::string("Coil 2")};
-    VectorXr Offsets = VectorXr::LinSpaced(6, 22.00, 23.0); // nbins, low, high
+    VectorXr Offsets = VectorXr::LinSpaced(6, 15.00, 23.0); // nbins, low, high
 
     auto outfile = std::ofstream("coupling.dat");
     for (int ii=0; ii< Offsets.size(); ++ii) {
-        MoveLoop(Tx2, 21, 15, 100, 75 + Offsets(ii), Larmor);
+        MoveLoop(Tx2, 21, 15, 50, 50 + Offsets(ii), Larmor);
         #ifdef LEMMAUSEVTK
         Complex coupling = Kern->Calculate( tx, rx, true );
         #else
