@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
 
         Kern->SetIntegrationSize( (Vector3r() << 50,100,20).finished() );
         Kern->SetIntegrationOrigin( (Vector3r() << 0,0,0.01).finished() );
-        Kern->SetTolerance( 1e-2 ); // 1e-12
+        Kern->SetTolerance( 1e-12 ); // 1e-12
 
     std::vector<std::string> tx = {std::string("Coil 1")};//,std::string("Coil 2")};
     std::vector<std::string> rx = {std::string("Coil 2")};

@@ -252,9 +252,9 @@ namespace Lemma {
     //      Method:  f
     //--------------------------------------------------------------------------------------
     Complex Coupling::f( const Vector3r& r, const Real& volume, const Vector3cr& Ht, const Vector3cr& Hr ) {
-        //return volume * ( Ht.dot(Hr) );                              // coupling
+        return volume * ( Ht.dot(Hr) );                              // coupling
         //return volume * (1.-((Ht+Hr).norm()/(Hr.norm() + Ht.norm()))); // interference
-        return volume * std::acos( (Ht.dot(Hr) / (Ht.norm()*Hr.norm())) ); // angle
+        //return volume * std::acos( (Ht.dot(Hr) / (Ht.norm()*Hr.norm())) ); // angle
     }
 
     //--------------------------------------------------------------------------------------
