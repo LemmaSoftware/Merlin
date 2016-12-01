@@ -400,7 +400,7 @@ namespace Lemma {
 
         VectorXcr ksum = kvals.colwise().sum();     // Kernel sum
         // Evaluate whether or not furthur splitting is needed
-        if ( ((ksum - parentVal).array().abs() > tol).any() || level < minLevel && level < maxLevel ) {
+        if ( (((ksum - parentVal).array().abs() > tol).any() && level<maxLevel) || level < minLevel ) {
             // Not a leaf dive further in
             for (int ichild=0; ichild<8; ++ichild) {
                 Vector3r cp = pos; // Eigen complains about combining these
@@ -480,7 +480,7 @@ namespace Lemma {
 
         VectorXcr ksum = kvals.colwise().sum();     // Kernel sum
         // Evaluate whether or not furthur splitting is needed
-        if ( ((ksum - parentVal).array().abs() > tol).any() || level < minLevel && level < maxLevel ) {
+        if ( (((ksum - parentVal).array().abs() > tol).any() && level<maxLevel) || level < minLevel ) {
             oct->SubdivideLeaf(curse);
             for (int ichild=0; ichild<8; ++ichild) {
                 curse->ToChild(ichild);

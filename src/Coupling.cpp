@@ -319,7 +319,7 @@ namespace Lemma {
 
         Complex ksum = kvals.sum();     // Kernel sum
         // Evaluate whether or not furthur splitting is needed
-        if ( std::abs(ksum-parentVal) > tol || level < minLevel && level < maxLevel ) {
+        if ( (std::abs(ksum-parentVal) > tol && level < maxLevel) || level < minLevel ) {
             // Not a leaf dive further in
             for (int ichild=0; ichild<8; ++ichild) {
                 Vector3r cp = pos; // Eigen complains about combining these
@@ -399,7 +399,7 @@ namespace Lemma {
 
         Complex ksum = kvals.sum();     // Kernel sum
         // Evaluate whether or not furthur splitting is needed
-        if ( std::abs(ksum-parentVal) > tol || level < minLevel && level < maxLevel ) {
+        if ( (std::abs(ksum-parentVal) > tol && level < maxLevel) || level < minLevel ) {
             oct->SubdivideLeaf(curse);
             for (int ichild=0; ichild<8; ++ichild) {
                 curse->ToChild(ichild);
