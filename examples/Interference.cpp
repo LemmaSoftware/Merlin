@@ -39,7 +39,6 @@ int main(int argc, char** argv) {
 	auto earth = LayeredEarthEM::NewSP();
 		earth->SetNumberOfLayers(3);
 		earth->SetLayerConductivity( (VectorXcr(3) << Complex(0.,0), Complex(1./50.,0), Complex(1./100.)).finished() );
-		//earth->SetLayerConductivity( (VectorXcr(3) << Complex(0.,0), Complex(1./7.,0), Complex(1./100.)).finished() );
 		earth->SetLayerThickness( (VectorXr(1) << 10).finished() );
         // Set mag field info
         // From NOAA, Laramie WY, June 9 2016, aligned with mag. north
@@ -54,20 +53,20 @@ int main(int argc, char** argv) {
     auto Tx1 = CircularLoop(21, 15, 50, 50, Larmor);
     auto Tx2 = CircularLoop(21, 15, 50, 50, Larmor); // initially coincident
 
-    auto Kern = LoopInteractions<COUPLING>::NewSP();
+    auto Kern = LoopInteractions<INTERFERENCE>::NewSP();
         Kern->PushCoil( "Coil 1", Tx1 );
         Kern->PushCoil( "Coil 2", Tx2 );
         Kern->SetLayeredEarthEM( earth );
 
-        Kern->SetIntegrationSize( (Vector3r() << 50,200,20).finished() );
-        Kern->SetIntegrationOrigin( (Vector3r() << 0,0,0.01).finished() );
-        Kern->SetTolerance( 1e-12 ); // 1e-12
+        Kern->SetIntegrationSize( (Vector3r()   << 50,200,50).finished() );
+        Kern->SetIntegrationOrigin( (Vector3r() << 0,0,5.0).finished() );
+        Kern->SetTolerance( 1e-3 ); // 1e-12
 
     std::vector<std::string> tx = {std::string("Coil 1")};//,std::string("Coil 2")};
     std::vector<std::string> rx = {std::string("Coil 2")};
-    VectorXr Offsets = VectorXr::LinSpaced(30, 0.00, 45.0); // nbins, low, high
+    VectorXr Offsets = VectorXr::LinSpaced(61, 0.00, 60.0); // nbins, low, high
 
-    auto outfile = std::ofstream("coupling.dat");
+    auto outfile = std::ofstream("interference.dat");
     for (int ii=0; ii< Offsets.size(); ++ii) {
         MoveLoop(Tx2, 21, 15, 50, 50 + Offsets(ii), Larmor);
         #ifdef LEMMAUSEVTK
