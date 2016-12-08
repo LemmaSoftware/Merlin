@@ -25,7 +25,6 @@ std::shared_ptr<PolygonalWireAntenna> CircularLoop ( int nd, Real radius, Real O
 int main(int argc, char** argv) {
 
     Real offset = atof(argv[1]);
-        std::cout << offset << std::endl;
 
 	auto earth = LayeredEarthEM::NewSP();
 		earth->SetNumberOfLayers(3);
@@ -64,8 +63,8 @@ int main(int argc, char** argv) {
         //Kern->SetPulseCurrent( VectorXr::LinSpaced( 1, 10, 200 )  ); // nbins, low, high
         Kern->SetPulseCurrent( I ); // nbins, low, high
 
-        //Kern->SetDepthLayerInterfaces( VectorXr::LinSpaced( 30, 3, 45.5 ) ); // nlay, low, high
-        VectorXr interfaces = VectorXr::LinSpaced( 41, .5, 45.5 ); // nlay, low, high
+        //VectorXr interfaces = VectorXr::LinSpaced( 41, .5, 45.5 ); // nlay, low, high
+        VectorXr interfaces = VectorXr::LinSpaced( 51, .5, 45.5 ); // nlay, low, high
         Real thick = .5;
         for (int ilay=1; ilay<interfaces.size(); ++ilay) {
             interfaces(ilay) = interfaces(ilay-1) + thick;
@@ -76,10 +75,10 @@ int main(int argc, char** argv) {
     // We could, I suppose, take the earth model in here? For non-linear that
     // may be more natural to work with?
     std::vector<std::string> tx = {std::string("Coil 1"), std::string("Coil 2") };
-    std::vector<std::string> rx = {std::string("Coil 1")};
+    std::vector<std::string> rx = {std::string("Coil 2")};
     Kern->CalculateK0( tx, rx, false );
 
-    std::ofstream dout = std::ofstream(std::string("k-")+ std::string(argv[1])+ std::string(".dat"));
+    std::ofstream dout = std::ofstream(std::string("k-Tx2coil-Rx1coil-offset-")+ std::string(argv[1])+ std::string(".dat"));
     //std::ofstream dout = std::ofstream(std::string("k-coincident.dat"));
         dout << interfaces.transpose() << std::endl;
         dout << I.transpose() << std::endl;
@@ -89,7 +88,7 @@ int main(int argc, char** argv) {
         dout << Kern->GetKernel().imag() << std::endl;
         dout.close();
 
-    std::ofstream out = std::ofstream(std::string("k-")+std::string(argv[1])+std::string(".yaml"));
+    std::ofstream out = std::ofstream(std::string("k-Tx2coil-Rx1coil-offset-")+std::string(argv[1])+std::string(".yaml"));
     //std::ofstream out = std::ofstream(std::string("k-coincident.yaml"));
     out << *Kern;
     out.close();

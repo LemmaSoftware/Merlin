@@ -39,7 +39,6 @@ int main(int argc, char** argv) {
 	auto earth = LayeredEarthEM::NewSP();
 		earth->SetNumberOfLayers(3);
 		earth->SetLayerConductivity( (VectorXcr(3) << Complex(0.,0), Complex(1./50.,0), Complex(1./100.)).finished() );
-		//earth->SetLayerConductivity( (VectorXcr(3) << Complex(0.,0), Complex(1./7.,0), Complex(1./100.)).finished() );
 		earth->SetLayerThickness( (VectorXr(1) << 10).finished() );
         // Set mag field info
         // From NOAA, Laramie WY, June 9 2016, aligned with mag. north
@@ -60,12 +59,12 @@ int main(int argc, char** argv) {
         Kern->SetLayeredEarthEM( earth );
 
         Kern->SetIntegrationSize( (Vector3r() << 50,200,20).finished() );
-        Kern->SetIntegrationOrigin( (Vector3r() << 0,0,0.01).finished() );
-        Kern->SetTolerance( 1e-12 ); // 1e-12
+        Kern->SetIntegrationOrigin( (Vector3r() << 0,0,0.1).finished() );
+        Kern->SetTolerance( 1e-7 ); // 1e-12
 
     std::vector<std::string> tx = {std::string("Coil 1")};//,std::string("Coil 2")};
     std::vector<std::string> rx = {std::string("Coil 2")};
-    VectorXr Offsets = VectorXr::LinSpaced(30, 0.00, 45.0); // nbins, low, high
+    VectorXr Offsets = VectorXr::LinSpaced(121, 0.00, 60.0); // nbins, low, high
 
     auto outfile = std::ofstream("coupling.dat");
     for (int ii=0; ii< Offsets.size(); ++ii) {

@@ -271,7 +271,7 @@ namespace Lemma {
         int                                       ilay;
         int                                       nleaves;
         int                                       minLevel=4;
-        int                                       maxLevel=8;
+        int                                       maxLevel=10;
 
         Real                                      VOLSUM;
         Real                                      tol=1e-11;

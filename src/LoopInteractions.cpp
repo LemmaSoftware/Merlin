@@ -47,7 +47,8 @@ namespace Lemma {
 
     template <>
     Complex LoopInteractions<INTERFERENCE>::f( const Vector3r& r, const Real& volume, const Vector3cr& Ht, const Vector3cr& Hr ) {
-        return volume * (1.-((Ht+Hr).norm()/(Hr.norm() + Ht.norm()))); // interference
+        //return volume * (1.-((Ht+Hr).norm()/(Hr.norm() + Ht.norm()))); // normalized interference
+        return volume * (Ht+Hr).norm();  // interference not normalized
     }
 
     template <>

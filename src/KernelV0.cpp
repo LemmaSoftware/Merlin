@@ -281,14 +281,14 @@ namespace Lemma {
 
         // Compute phase delay
         // TODO add transmiiter current phase and delay induced apparent time phase!
-        Complex PhaseTerm = EBR.bhat.dot(EBT.bhat) + (B0hat.dot(EBR.bhat.cross(EBT.bhat) ));
+        Complex PhaseTerm = EBR.bhat.dot(EBT.bhat) + Complex(0, (B0hat.dot(EBR.bhat.cross(EBT.bhat))));
         Complex ejztr = std::exp(Complex(0, EBR.zeta + EBT.zeta));
 
         // Calcuate vector of all responses
         VectorXcr F = VectorXcr::Zero( PulseI.size() );
         for (int iq=0; iq<PulseI.size(); ++iq) {
             // Compute the tipping angle
-            Real sintheta = std::sin(0.5*GAMMA*PulseI(iq)*Taup*std::abs(EBT.alpha-EBT.beta));
+            Real sintheta = std::sin(0.5*GAMMA*PulseI(iq)*Taup*(EBT.alpha-EBT.beta)); // why std::abs
             F(iq) = -volume*Complex(0,Larmor)*Mn0Abs*(EBR.alpha+EBR.beta)*ejztr*sintheta*PhaseTerm;
         }
         return F;
@@ -412,7 +412,7 @@ namespace Lemma {
         // implicit else, is a leaf
         Kern.row(ilay) += ksum;
         VOLSUM += 8.*vol;
-        nleaves += 1;
+        nleaves += 8; // reflects the number of kernel evaluations
         return;     // is leaf
     }
 
@@ -425,7 +425,7 @@ namespace Lemma {
         const VectorXcr& parentVal, vtkHyperOctree* oct, vtkHyperOctreeCursor* curse) {
 
         std::cout << "\r" << (int)(1e2*VOLSUM/(Size[0]*Size[1]*Size[2])) << "\t" << nleaves;
-        std::cout.flush();
+        //std::cout.flush();
 
         // Next level step, interested in one level below
         // bitshift requires one extra, faster than, and equivalent to std::pow(2, level+1)
@@ -502,11 +502,25 @@ namespace Lemma {
             }
             return;  // not a leaf
         }
+        /* just stuff with sum of the kids and don't subdivide */
+        /*
         LeafDict[curse->GetLeafId()] = ksum/(8.*vol);
         LeafDictIdx[curse->GetLeafId()] = nleaves;
+        */
+        /* Alternatively, subdivide the VTK octree here and stuff the children to make better
+         * visuals, but also 8x the storage...
+         */
+        oct->SubdivideLeaf(curse);
+        for (int ichild=0; ichild<8; ++ichild) {
+            curse->ToChild(ichild);
+            LeafDict[curse->GetLeafId()] = ksum/(8.*vol);
+            LeafDictIdx[curse->GetLeafId()] = nleaves;
+            curse->ToParent();
+        }
+
         Kern.row(ilay) += ksum;
         VOLSUM += 8*vol;
-        nleaves += 1;
+        nleaves += 8; // good reason to say 1 or 8 here...8 sounds better and reflects kernel evaluations
         return;     // is a leaf
     }
 

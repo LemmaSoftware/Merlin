@@ -22,8 +22,8 @@ using namespace Lemma;
 
 static constexpr Real GAMMA = 2.67518e8;                  // MKS units
 
-std::shared_ptr<PolygonalWireAntenna> CircularLoop ( int nd, Real radius, Real Offsetx, Real Offsety, Real wL ) ;
-void MoveLoop( std::shared_ptr<PolygonalWireAntenna> Loop, int nd, Real Radius, Real Offsetx, Real Offsety, Real wL );
+std::shared_ptr<PolygonalWireAntenna>       CircularLoop ( int nd, Real Radius, Real Offsetx, Real Offsety, Real wL, Real pol=1. ) ;
+void MoveLoop( std::shared_ptr<PolygonalWireAntenna> Loop, int nd, Real Radius, Real Offsetx, Real Offsety, Real wL, Real pol=1. );
 
 int main(int argc, char** argv) {
     /*
@@ -50,8 +50,8 @@ int main(int argc, char** argv) {
     Real Larmor = earth->GetMagneticFieldMagnitude()*GAMMA/(2*PI);
 
     // Transmitter loops
-    auto Tx1 = CircularLoop(21, 15, 50, 50, Larmor);
-    auto Tx2 = CircularLoop(21, 15, 50, 50, Larmor); // initially coincident
+    auto Tx1 = CircularLoop(21, 15, 50, 50, Larmor,  1);
+    auto Tx2 = CircularLoop(21, 15, 50, 50, Larmor, -1); // initially coincident
 
     auto Kern = LoopInteractions<INTERFERENCE>::NewSP();
         Kern->PushCoil( "Coil 1", Tx1 );
@@ -59,16 +59,16 @@ int main(int argc, char** argv) {
         Kern->SetLayeredEarthEM( earth );
 
         Kern->SetIntegrationSize( (Vector3r()   << 50,200,50).finished() );
-        Kern->SetIntegrationOrigin( (Vector3r() << 0,0,5.0).finished() );
-        Kern->SetTolerance( 1e-3 ); // 1e-12
+        Kern->SetIntegrationOrigin( (Vector3r() << 0, 0, 0.1).finished() );
+        Kern->SetTolerance( 1e-5 ); // 1e-12
 
     std::vector<std::string> tx = {std::string("Coil 1")};//,std::string("Coil 2")};
     std::vector<std::string> rx = {std::string("Coil 2")};
     VectorXr Offsets = VectorXr::LinSpaced(61, 0.00, 60.0); // nbins, low, high
 
-    auto outfile = std::ofstream("interference.dat");
+    auto outfile = std::ofstream("interference-opposed.dat");
     for (int ii=0; ii< Offsets.size(); ++ii) {
-        MoveLoop(Tx2, 21, 15, 50, 50 + Offsets(ii), Larmor);
+        MoveLoop(Tx2, 21, 15, 50, 50 + Offsets(ii), Larmor, -1.);
         #ifdef LEMMAUSEVTK
         Complex coupling = Kern->Calculate( tx, rx, true );
         #else
@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
     outfile.close();
 }
 
-std::shared_ptr<Lemma::PolygonalWireAntenna> CircularLoop ( int nd, Real Radius, Real Offsetx, Real Offsety, Real wL ) {
+std::shared_ptr<Lemma::PolygonalWireAntenna> CircularLoop ( int nd, Real Radius, Real Offsetx, Real Offsety, Real wL, Real pol ) {
 
     auto Tx1 = Lemma::PolygonalWireAntenna::NewSP();
          Tx1->SetNumberOfPoints(nd);
@@ -88,7 +88,7 @@ std::shared_ptr<Lemma::PolygonalWireAntenna> CircularLoop ( int nd, Real Radius,
     VectorXr range = VectorXr::LinSpaced(nd, 0, 2*PI);
     int ii;
     for (ii=0; ii<nd; ++ii) {
-        Tx1->SetPoint(ii, Vector3r(Offsetx+Radius*std::cos(range(ii)), Offsety+Radius*std::sin(range(ii)),  -1e-3));
+        Tx1->SetPoint(ii, Vector3r(Offsetx+Radius*std::cos(range(ii)), Offsety+pol*Radius*std::sin(range(ii)),  -1e-3));
     }
 
     Tx1->SetCurrent(1.);
@@ -99,14 +99,14 @@ std::shared_ptr<Lemma::PolygonalWireAntenna> CircularLoop ( int nd, Real Radius,
     return Tx1;
 }
 
-void MoveLoop( std::shared_ptr<Lemma::PolygonalWireAntenna> Tx1, int nd, Real Radius, Real Offsetx, Real Offsety, Real wL ) {
+void MoveLoop( std::shared_ptr<Lemma::PolygonalWireAntenna> Tx1, int nd, Real Radius, Real Offsetx, Real Offsety, Real wL, Real pol ) {
 
     Tx1->SetNumberOfPoints(nd);
 
     VectorXr range = VectorXr::LinSpaced(nd, 0, 2*PI);
     int ii;
     for (ii=0; ii<nd; ++ii) {
-        Tx1->SetPoint(ii, Vector3r(Offsetx+Radius*std::cos(range(ii)), Offsety+Radius*std::sin(range(ii)),  -1e-3));
+        Tx1->SetPoint(ii, Vector3r(Offsetx+Radius*std::cos(range(ii)), Offsety+pol*Radius*std::sin(range(ii)),  -1e-3));
     }
 
     Tx1->SetCurrent(1.);
