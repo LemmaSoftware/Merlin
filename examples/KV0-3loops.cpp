@@ -40,10 +40,6 @@ int main(int argc, char** argv) {
         // Set mag field info
         // From NOAA, Laramie WY, June 9 2016, aligned with mag. north
         earth->SetMagneticFieldIncDecMag( 67, 0, 52750, NANOTESLA );
-        //earth->SetMagneticFieldIncDecMag( 90, 0, 52750, NANOTESLA );
-        std::cout << "B0 " << earth->GetMagneticField( ).transpose() << std::endl;
-        std::cout << "hat BO " << earth->GetMagneticFieldUnitVector().transpose() << std::endl ;
-        std::cout << "hat |BO| " << earth->GetMagneticFieldUnitVector().norm() << std::endl ;
 
     // Transmitter loops
     auto Tx1 = CircularLoop(21, 15, 100+offset/2., 100-offset/2.);
@@ -89,10 +85,10 @@ int main(int argc, char** argv) {
     // We could, I suppose, take the earth model in here? For non-linear that
     // may be more natural to work with?
     std::vector<std::string> tx = {std::string("Coil 1"), std::string("Coil 2"), std::string("Coil 3") };
-    std::vector<std::string> rx = {std::string("Coil 1"), std::string("Coil 2"), std::string("Coil 3") };
+    //std::vector<std::string> rx = {std::string("Coil 1"), std::string("Coil 2"), std::string("Coil 3") };
     //std::vector<std::string> rx = {std::string("Coil 1"), std::string("Coil 2")};//, std::string("Coil 3") };
-    //std::vector<std::string> rx = {std::string(argv[3])};
-    Kern->CalculateK0( tx, rx, true );
+    std::vector<std::string> rx = {std::string(argv[3])};
+    Kern->CalculateK0( tx, rx, false );
 
     std::ofstream dout = std::ofstream(std::string("k0-3Tx-RxCh-") + std::string(argv[3]) + std::string("-tol") + std::string(argv[1])+ std::string(".dat"));
     dout << "# Transmitters: ";
@@ -115,10 +111,9 @@ int main(int argc, char** argv) {
         dout << Kern->GetKernel().imag() << std::endl;
         dout.close();
 
-    //std::ofstream out = std::ofstream(std::string("k0-3Tx-RxCh1-")+std::string(argv[1])+std::string(".yaml"));
-    //std::ofstream out = std::ofstream(std::string("k-coincident.yaml"));
-    //out << *Kern;
-    //out.close();
+    std::ofstream out = std::ofstream(std::string("k0-3Tx-RxCh-") + std::string(argv[3]) + std::string("-tol") + std::string(argv[1])+ std::string(".yaml"));
+    out << *Kern;
+    out.close();
 }
 
 std::shared_ptr<Lemma::PolygonalWireAntenna> CircularLoop ( int nd, Real Radius, Real Offsetx, Real Offsety ) {

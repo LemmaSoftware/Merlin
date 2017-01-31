@@ -48,6 +48,8 @@ int main(int argc, char** argv) {
         Kern->SetIntegrationOrigin( (Vector3r() << 0,0,0).finished() );
         Kern->SetTolerance( 1e-12 ); // 1e-12
 
+        Kern->AlignWithAkvoDataset( YAML::LoadFile(argv[2]) );
+
         Kern->SetPulseDuration(0.020);
         VectorXr I(36);
 

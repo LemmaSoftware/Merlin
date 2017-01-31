@@ -112,6 +112,23 @@ namespace Lemma {
 
     //--------------------------------------------------------------------------------------
     //       Class:  KernelV0
+    //      Method:  AlignWithAkvoDataset
+    //--------------------------------------------------------------------------------------
+    void KernelV0::AlignWithAkvoDataset( const YAML::Node& node ) {
+        if (node["processed"].as<std::string>().substr(0,4) == "Akvo") {
+            std::cout << "Akvo file read\n";
+            std::cout << node["processed"] << std::endl;
+        }
+        if (node["pulseType"].as<std::string>() == "FID") {
+            PulseI  = node["Pulse 1"]["current"].as<VectorXr>();
+            this->SetPulseDuration( node["pulseLength"].as<double>() );
+        } else {
+            std::cerr << "Pulse Type " << node["PulseType"] << "is not supported\n";
+        }
+    }
+
+    //--------------------------------------------------------------------------------------
+    //       Class:  KernelV0
     //      Method:  DeSerialize
     //--------------------------------------------------------------------------------------
     void KernelV0::CalculateK0 (const std::vector< std::string>& Tx, const std::vector<std::string >& Rx,
