@@ -1,6 +1,9 @@
 add_executable( KernelV0 KernelV0.cpp  )
 target_link_libraries(  KernelV0  "lemmacore" "fdem1d" "merlin")
 
+add_executable( KernelV0-2 KernelV0-2.cpp  )
+target_link_libraries(  KernelV0-2  "lemmacore" "fdem1d" "merlin")
+
 add_executable( KV0-3loops KV0-3loops.cpp  )
 target_link_libraries(  KV0-3loops  "lemmacore" "fdem1d" "merlin")
 
