@@ -58,22 +58,23 @@ int main(int argc, char** argv) {
         Kern->PushCoil( "Coil 2", Tx2 );
         Kern->SetLayeredEarthEM( earth );
 
-        Kern->SetIntegrationSize( (Vector3r()   << 50,200,50).finished() );
-        Kern->SetIntegrationOrigin( (Vector3r() << 0, 0, 0.1).finished() );
+        Kern->SetIntegrationSize( (Vector3r()   << 50,200,10).finished() );
+        Kern->SetIntegrationOrigin( (Vector3r() << 0, 0, 50).finished() );
         Kern->SetTolerance( 1e-5 ); // 1e-12
 
     std::vector<std::string> tx = {std::string("Coil 1")};//,std::string("Coil 2")};
     std::vector<std::string> rx = {std::string("Coil 2")};
     VectorXr Offsets = VectorXr::LinSpaced(61, 0.00, 60.0); // nbins, low, high
 
-    auto outfile = std::ofstream("interference-opposed.dat");
+    //auto outfile = std::ofstream("interference-opposed.dat");
+    auto outfile = std::ofstream("interference-50-60.dat");
     for (int ii=0; ii< Offsets.size(); ++ii) {
-        MoveLoop(Tx2, 21, 15, 50, 50 + Offsets(ii), Larmor, -1.);
-        #ifdef LEMMAUSEVTK
-        Complex coupling = Kern->Calculate( tx, rx, true );
-        #else
+        MoveLoop(Tx2, 21, 15, 50, 50 + Offsets(ii), Larmor, 1.);
+        //#ifdef LEMMAUSEVTK
+        //Complex coupling = Kern->Calculate( tx, rx, true );
+        //#else
         Complex coupling = Kern->Calculate( tx, rx, false );
-        #endif
+        //#endif
         std::cout << "coupling " << coupling << std::endl;
         outfile << Offsets(ii) << "\t" <<  std::real(coupling) << "\t" << std::imag(coupling) << std::endl;
     }

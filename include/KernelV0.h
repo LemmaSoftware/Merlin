@@ -205,6 +205,10 @@ namespace Lemma {
             Taup = taup;
         }
 
+        inline Real GetPulseDuration( ) {
+            return Taup;
+        }
+
         inline void SetDepthLayerInterfaces( const VectorXr& iface ){
             Interfaces = iface;
         }
