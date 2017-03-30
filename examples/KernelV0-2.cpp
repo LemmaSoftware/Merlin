@@ -20,39 +20,35 @@
 #include <Merlin>
 using namespace Lemma;
 
-std::shared_ptr<PolygonalWireAntenna> CircularLoop ( int nd, Real radius, Real Offsetx, Real Offsety ) ;
 
 int main(int argc, char** argv) {
 
-    Real offset = atof(argv[1]);
+    if (argc<4) {
+        std::cout << "./KernelV0-2 earth.yaml tx.yaml  rx.yaml \n";
+        return(EXIT_SUCCESS);
+    }
+    std::cout << "Using earth model: " << argv[1] << std::endl;
+    auto earth = LayeredEarthEM::DeSerialize( YAML::LoadFile(argv[1]) );
 
-	auto earth = LayeredEarthEM::NewSP();
-		earth->SetNumberOfLayers(3);
-		earth->SetLayerConductivity( (VectorXcr(3) << Complex(0.,0), Complex(1./50.,0), Complex(1./100.)).finished() );
-		earth->SetLayerThickness( (VectorXr(1) << 10).finished() );
-        // Set mag field info
-        // From NOAA, Laramie WY, June 9 2016, aligned with mag. north
-        earth->SetMagneticFieldIncDecMag( 67, 0, 52750, NANOTESLA );
+    std::cout << "Using transmitter: " << argv[2] << std::endl;
+    auto Tx = PolygonalWireAntenna::DeSerialize( YAML::LoadFile(argv[2]) );
 
-    // Transmitter loops
-    auto Tx1 = CircularLoop(21, 15, 100, 100);
-    auto Tx2 = CircularLoop(21, 15, 100, 100 + offset); // 100, 115, 124.8, 130
-    //auto Tx1 = CircularLoop(60, 15, 0, 0); // was 60
+    std::cout << "Using receivers: " << argv[3] << std::endl;
+    auto Rx1 = PolygonalWireAntenna::DeSerialize( YAML::LoadFile(argv[3]) );
 
     auto Kern = KernelV0::NewSP();
-        Kern->PushCoil( "Coil 1", Tx1 );
-        Kern->PushCoil( "Coil 2", Tx2 );
+        Kern->PushCoil( "Coil 1", Tx );
+        Kern->PushCoil( "Coil 2", Rx1 );
         Kern->SetLayeredEarthEM( earth );
 
         Kern->SetIntegrationSize( (Vector3r() << 200,200,200).finished() );
         Kern->SetIntegrationOrigin( (Vector3r() << 0,0,0).finished() );
-        Kern->SetTolerance( 1e-12 ); // 1e-12
+        Kern->SetTolerance( 1e-10 ); // 1e-12
 
-        Kern->AlignWithAkvoDataset( YAML::LoadFile(argv[2]) );
+//         Kern->AlignWithAkvoDataset( YAML::LoadFile(argv[2]) );
 
         Kern->SetPulseDuration(0.020);
         VectorXr I(36);
-
         // off from VC by 1.075926340216996
         // Pulses from Wyoming Red Buttes exp 0
         I << 397.4208916184016, 352.364477036168, 313.0112765842783, 278.37896394065376, 247.81424224324982,
@@ -76,11 +72,11 @@ int main(int argc, char** argv) {
 
     // We could, I suppose, take the earth model in here? For non-linear that
     // may be more natural to work with?
-    std::vector<std::string> tx = {std::string("Coil 1"), std::string("Coil 2") };
+    std::vector<std::string> tx = {std::string("Coil 1")};
     std::vector<std::string> rx = {std::string("Coil 2")};
     Kern->CalculateK0( tx, rx, false );
 
-    std::ofstream dout = std::ofstream(std::string("k-Tx2coil-Rx1coil-offset-")+ std::string(argv[1])+ std::string(".dat"));
+    std::ofstream dout = std::ofstream(std::string("test-")+ std::string(argv[1])+ std::string(".dat"));
     //std::ofstream dout = std::ofstream(std::string("k-coincident.dat"));
         dout << interfaces.transpose() << std::endl;
         dout << I.transpose() << std::endl;
@@ -90,28 +86,10 @@ int main(int argc, char** argv) {
         dout << Kern->GetKernel().imag() << std::endl;
         dout.close();
 
-    std::ofstream out = std::ofstream(std::string("k-Tx2coil-Rx1coil-offset-")+std::string(argv[1])+std::string(".yaml"));
+    std::ofstream out = std::ofstream(std::string("test-")+std::string(argv[1])+std::string(".yaml"));
     //std::ofstream out = std::ofstream(std::string("k-coincident.yaml"));
     out << *Kern;
     out.close();
 }
 
-std::shared_ptr<Lemma::PolygonalWireAntenna> CircularLoop ( int nd, Real Radius, Real Offsetx, Real Offsety ) {
 
-    auto Tx1 = Lemma::PolygonalWireAntenna::NewSP();
-         Tx1->SetNumberOfPoints(nd);
-
-    VectorXr range = VectorXr::LinSpaced(nd, 0, 2*PI);
-    int ii;
-    for (ii=0; ii<nd; ++ii) {
-        Tx1->SetPoint(ii, Vector3r(Offsetx+Radius*std::cos(range(ii)), Offsety+Radius*std::sin(range(ii)),  -1e-3));
-    }
-    //Tx1->SetPoint(ii, Vector3r(Offsetx+Radius*1, Offsety,  -1e-3));
-
-    Tx1->SetCurrent(1.);
-    Tx1->SetNumberOfTurns(1);
-    Tx1->SetNumberOfFrequencies(1);
-    Tx1->SetFrequency(0,2246);
-
-    return Tx1;
-}

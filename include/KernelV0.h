@@ -166,6 +166,11 @@ namespace Lemma {
         }		// -----  end of method KernelV0::SetIntegrationOrigin  -----
 
         /**
+         *  Aligns the kernel settings with an Akvo Processed dataset.
+         */
+        void AlignWithAkvoDataset( const YAML::Node& node ) ;
+
+        /**
          *   Assign transmiter coils
          */
         inline void PushCoil( const std::string& label, std::shared_ptr<PolygonalWireAntenna> ant ) {
