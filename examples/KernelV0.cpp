@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
 		earth->SetLayerThickness( (VectorXr(1) << 10).finished() );
         // Set mag field info
         // From NOAA, Laramie WY, June 9 2016, aligned with mag. north
-        earth->SetMagneticFieldIncDecMag( 67, 0, 52750, NANOTESLA );
+        earth->SetMagneticFieldIncDecMag( 67, 9, 52750, NANOTESLA );
 
     // Transmitter loops
     auto Tx1 = CircularLoop(21, 15, 100, 100);

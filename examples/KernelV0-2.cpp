@@ -42,8 +42,9 @@ int main(int argc, char** argv) {
         Kern->SetLayeredEarthEM( earth );
 
         Kern->SetIntegrationSize( (Vector3r() << 200,200,200).finished() );
-        Kern->SetIntegrationOrigin( (Vector3r() << 0,0,0).finished() );
-        Kern->SetTolerance( 1e-10 ); // 1e-12
+        Kern->SetIntegrationOrigin( (Vector3r() << -100, -100, .5).finished() );
+        Real tol(1e-9);
+        Kern->SetTolerance( tol ); // 1e-12
 
 //         Kern->AlignWithAkvoDataset( YAML::LoadFile(argv[2]) );
 
@@ -62,7 +63,7 @@ int main(int argc, char** argv) {
         Kern->SetPulseCurrent( I ); // nbins, low, high
 
         //VectorXr interfaces = VectorXr::LinSpaced( 41, .5, 45.5 ); // nlay, low, high
-        VectorXr interfaces = VectorXr::LinSpaced( 51, .5, 45.5 ); // nlay, low, high
+        VectorXr interfaces = VectorXr::LinSpaced( 61, .5, 45.5 ); // nlay, low, high
         Real thick = .5;
         for (int ilay=1; ilay<interfaces.size(); ++ilay) {
             interfaces(ilay) = interfaces(ilay-1) + thick;
@@ -74,10 +75,19 @@ int main(int argc, char** argv) {
     // may be more natural to work with?
     std::vector<std::string> tx = {std::string("Coil 1")};
     std::vector<std::string> rx = {std::string("Coil 2")};
-    Kern->CalculateK0( tx, rx, false );
+    Kern->CalculateK0( tx, rx, false ); // 3rd argument is vtk output
 
-    std::ofstream dout = std::ofstream(std::string("test-")+ std::string(argv[1])+ std::string(".dat"));
-    //std::ofstream dout = std::ofstream(std::string("k-coincident.dat"));
+    std::ofstream dout = std::ofstream(std::string("Rx-")+std::string(argv[3])+std::string(".dat"));
+    dout << "# Transmitters: ";
+    for (auto lp : tx) {
+        dout << lp << "\t";
+    }
+    dout << "\n# Receivers: ";
+    for (auto lp : rx) {
+        dout << lp << "\t";
+    }
+    dout << "\n# Tolerance: " << tol << std::endl;
+
         dout << interfaces.transpose() << std::endl;
         dout << I.transpose() << std::endl;
         dout << "#real\n";
@@ -86,7 +96,7 @@ int main(int argc, char** argv) {
         dout << Kern->GetKernel().imag() << std::endl;
         dout.close();
 
-    std::ofstream out = std::ofstream(std::string("test-")+std::string(argv[1])+std::string(".yaml"));
+    std::ofstream out = std::ofstream(std::string("Rx-")+std::string(argv[2])+std::string(".yaml"));
     //std::ofstream out = std::ofstream(std::string("k-coincident.yaml"));
     out << *Kern;
     out.close();

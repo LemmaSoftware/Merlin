@@ -87,13 +87,9 @@ int main(int argc, char** argv) {
     std::vector<std::string> tx = {std::string("Coil 1"), std::string("Coil 2"), std::string("Coil 3") };
     //std::vector<std::string> rx = {std::string("Coil 1"), std::string("Coil 2")};//, std::string("Coil 3") };
     std::vector<std::string> rx = {std::string(argv[3])};
-    //std::vector<std::string> rx = {std::string("Coil 1"), std::string("Coil 2"), std::string("Coil 3") };
-    //std::vector<std::string> rx = {std::string("Coil 1"), std::string("Coil 2")};//, std::string("Coil 3") };
-    std::vector<std::string> rx = {std::string(argv[3])};
     Kern->CalculateK0( tx, rx, false );
 
-    //std::ofstream dout = std::ofstream(std::string("k0-3Tx-RxCh-") + std::string(argv[3]) + std::string("-tol") + std::string(argv[1])+ std::string(".dat"));
-    std::ofstream dout = std::ofstream(std::string("k0-3Tx-RxCh-13") + std::string("-off-") + std::string(argv[1])+ std::string(".dat"));
+    std::ofstream dout = std::ofstream(std::string("k0-3Tx-RxCh-") + std::string(argv[3]) + std::string("-tol") + std::string(argv[1])+ std::string(".dat"));
     dout << "# Transmitters: ";
     for (auto lp : tx) {
         dout << lp << "\t";
@@ -113,13 +109,8 @@ int main(int argc, char** argv) {
         dout << Kern->GetKernel().imag() << std::endl;
         dout.close();
 
-<<<<<<< HEAD
     //std::ofstream out = std::ofstream(std::string("k0-3Tx-RxCh1-")+std::string(argv[1])+std::string(".yaml"));
-    std::ofstream out = std::ofstream(std::string("k0-3Tx-RxCh-13") + std::string("-off-") + std::string(argv[1])+ std::string(".yaml"));
-    //std::ofstream out = std::ofstream(std::string("k-coincident.yaml"));
-=======
     std::ofstream out = std::ofstream(std::string("k0-3Tx-RxCh-") + std::string(argv[3]) + std::string("-tol") + std::string(argv[1])+ std::string(".yaml"));
->>>>>>> 241215b41d033a7d74d572d479d486850b30ffce
     out << *Kern;
     out.close();
 }
