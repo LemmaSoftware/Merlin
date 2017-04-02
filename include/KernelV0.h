@@ -35,12 +35,15 @@
 namespace Lemma {
 
     struct EllipticB {
-        Vector3r  bhat;
-        Vector3r  bhatp;
         Real      alpha;
         Real      beta;
-        Complex   eizt;
         Real      zeta;
+        Real      err;
+        Complex   eizt;
+//        Complex   BperpdotB;
+        Vector3r  bhat;
+        Vector3r  bhatp;
+//        Vector3cr Bperp;
     };
 
     template <typename T> int sgn(T val) {
@@ -279,8 +282,8 @@ namespace Lemma {
 
         int                                       ilay;
         int                                       nleaves;
-        int                                       minLevel=4;
-        int                                       maxLevel=10;
+        int                                       minLevel=0;
+        int                                       maxLevel=12;
 
         Real                                      VOLSUM;
         Real                                      tol=1e-11;
@@ -310,7 +313,7 @@ namespace Lemma {
 
         // Physical constants and conversion factors
         static constexpr Real GAMMA = 2.67518e8;                  // MKS units
-        static constexpr Real INVSQRT2 = 0.70710678118654746;
+        static constexpr Real INVSQRT2 = 0.70710678118654746;     // 1/sqrt(2)
         static constexpr Real HBAR = 1.05457148e-34;              // m2 kg / s
         static constexpr Real NH2O = 6.692e28;                    // [m^3]
         static constexpr Real KB = 1.3805e-23;                    // m^2 kg s-2 K-1

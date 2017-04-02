@@ -282,6 +282,7 @@ namespace Lemma {
     //       Class:  KernelV0
     //      Method:  f
     //--------------------------------------------------------------------------------------
+#if 1
     VectorXcr KernelV0::f( const Vector3r& r, const Real& volume, const Vector3cr& Ht, const Vector3cr& Hr ) {
 
         // Compute the elliptic fields
@@ -294,6 +295,7 @@ namespace Lemma {
 
         // Compute Mn0
         Vector3r Mn0 = ComputeMn0(1.0, B0);
+        //std::cout << "Mn0\t" << Mn0.transpose() << std::endl;
         Real Mn0Abs = Mn0.norm();
 
         // Compute phase delay
@@ -305,11 +307,26 @@ namespace Lemma {
         VectorXcr F = VectorXcr::Zero( PulseI.size() );
         for (int iq=0; iq<PulseI.size(); ++iq) {
             // Compute the tipping angle
-            Real sintheta = std::sin(0.5*GAMMA*PulseI(iq)*Taup*(EBT.alpha-EBT.beta)); // why std::abs
+            Real sintheta = std::sin(0.5*GAMMA*PulseI(iq)*Taup*(EBT.alpha-EBT.beta));
             F(iq) = -volume*Complex(0,Larmor)*Mn0Abs*(EBR.alpha+EBR.beta)*ejztr*sintheta*PhaseTerm;
+            //TODO TEST FOR ASYMETRY
+            //Real sintheta = std::sin(0.5*GAMMA*PulseI(iq)*Taup*(EBT.alpha-EBT.beta));
+            //F(iq) = volume * Complex(EBT.Bperp.real().norm(), EBT.Bperp.imag().norm()); //Complex(sintheta, EBT.Bperp.norm() );
+            //F(iq) = volume * Complex(EBT.alpha, EBT.beta);
+            //F(iq) = volume * EBT.err;
+            //F(iq) = volume * sintheta;
         }
+
         return F;
     }
+#endif
+#if 0
+    VectorXcr KernelV0::f( const Vector3r& r, const Real& volume, const Vector3cr& Ht, const Vector3cr& Hr ) {
+        VectorXcr F = VectorXcr::Ones( PulseI.size() );
+        F.array() *= volume * Complex(Ht.norm(), Hr.norm()); //*Ht.dot(Hr);
+        return F;
+    }
+#endif
 
 //     //--------------------------------------------------------------------------------------
 //     //       Class:  KernelV0
@@ -339,18 +356,32 @@ namespace Lemma {
     //      Method:  ComputeV0Cell
     //--------------------------------------------------------------------------------------
     EllipticB KernelV0::EllipticFieldRep (const Vector3cr& B, const Vector3r& B0hat) {
+        // This all follows Weichman et. al., 2000. There are some numerical stability isseus
+        // below. Reformulating may be welcome, may be in B field calculation too.
         EllipticB ElipB = EllipticB();
-        Vector3cr Bperp = B.array() - B0hat.dot(B)*B0hat.array();
-        Real BperpNorm = Bperp.norm();
+        Vector3cr Bperp = B - B0hat.dot(B)*B0hat; // complex - real??
+        //ElipB.BperpdotB = Bperp.dot(B0hat);       // TODO remove
+        Real BperpNorm  = Bperp.norm();
         Complex Bp2 = Bperp.transpose() * Bperp;
         VectorXcr iB0 = Complex(0,1)*B0hat.cast<Complex>().array();
         ElipB.eizt = std::sqrt(Bp2 / std::abs(Bp2));
         ElipB.alpha = INVSQRT2*std::sqrt(BperpNorm*BperpNorm + std::abs(Bp2));
-        ElipB.beta = sgn(std::real(iB0.dot(Bperp.cross(Bperp.conjugate())))) *
-                (INVSQRT2)*std::sqrt(std::abs(BperpNorm*BperpNorm-std::abs(Bp2)));
+        ElipB.beta = std::copysign(1, std::real(iB0.dot( Bperp.cross(Bperp.conjugate())) )) *
+                     (INVSQRT2*std::sqrt(BperpNorm*BperpNorm - std::abs(Bp2)));
         ElipB.bhat = ((Real)1./ElipB.alpha)*(((Real)1./ElipB.eizt)*Bperp.array()).real().array();
         ElipB.bhatp = B0hat.cross(ElipB.bhat);
         ElipB.zeta = std::real(std::log(ElipB.eizt)/Complex(0,1));
+        /* use as an error check decomposed field - computed actual */
+        Vector3cr Bperp2 = ElipB.eizt * (ElipB.alpha * ElipB.bhat
+                       + (Complex(0,1) * ElipB.beta * ElipB.bhatp) );
+        ElipB.err = (Bperp-Bperp2).norm();
+        if (ElipB.err > 1e-12) {
+            std::cout << "Elip error\n";
+            std::cout << "Bperp \t" << Bperp.transpose() << std::endl;
+            std::cout << "Bperp2\t" << Bperp2.transpose() << std::endl;
+            std::cout << "err   \t" << ElipB.err << std::endl;
+        }
+        //std::cout << "B0\t" << B0hat.transpose() << std::endl;
         return ElipB;
     }
 
@@ -391,6 +422,9 @@ namespace Lemma {
         Eigen::Matrix<Complex, 3, 8> Ht = Eigen::Matrix<Complex, 3, 8>::Zero();
         Eigen::Matrix<Complex, 3, 8> Hr = Eigen::Matrix<Complex, 3, 8>::Zero();
         for ( auto EMCalc : EMEarths ) {
+
+
+
             EMCalc.second->GetFieldPoints()->ClearFields();
             EMCalc.second->CalculateWireAntennaFields();
             switch (EMCalc.second->GetTxRxMode()) {
