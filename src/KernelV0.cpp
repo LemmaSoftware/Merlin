@@ -80,6 +80,7 @@ namespace Lemma {
         for ( auto txm : TxRx) {
             node[txm.first] = txm.second->Serialize();
         }
+
         // LayeredEarthEM
         node["SigmaModel"] = SigmaModel->Serialize();
 
@@ -208,15 +209,15 @@ namespace Lemma {
             // Fill in leaf data
             vtkDoubleArray* kr = vtkDoubleArray::New();
                 kr->SetNumberOfComponents(1);
-                kr->SetName("Re($K_0$)");
+                kr->SetName("Re($\\mathcal{K}_0$)");
                 kr->SetNumberOfTuples( oct->GetNumberOfLeaves() );
             vtkDoubleArray* ki = vtkDoubleArray::New();
                 ki->SetNumberOfComponents(1);
-                ki->SetName("Im($K_0$)");
+                ki->SetName("Im($\\mathcal{K}_0$)");
                 ki->SetNumberOfTuples( oct->GetNumberOfLeaves() );
             vtkDoubleArray* km = vtkDoubleArray::New();
                 km->SetNumberOfComponents(1);
-                km->SetName("mod($K_0$)");
+                km->SetName("mod($\\mathcal{K}_0$)");
                 km->SetNumberOfTuples( oct->GetNumberOfLeaves() );
             vtkIntArray* kid = vtkIntArray::New();
                 kid->SetNumberOfComponents(1);
@@ -224,7 +225,26 @@ namespace Lemma {
                 kid->SetNumberOfTuples( oct->GetNumberOfLeaves() );
             vtkIntArray* kerr = vtkIntArray::New();
                 kerr->SetNumberOfComponents(1);
-                kerr->SetName("nleaf");
+                kerr->SetName("err");
+                kerr->SetNumberOfTuples( oct->GetNumberOfLeaves() );
+            // Ht field
+            vtkDoubleArray* htr = vtkDoubleArray::New();
+                htr->SetNumberOfComponents(3);
+                htr->SetName("Re($\\mathbf{\\mathcal{H}}_T$)");
+                htr->SetNumberOfTuples( oct->GetNumberOfLeaves() );
+            vtkDoubleArray* hti = vtkDoubleArray::New();
+                hti->SetNumberOfComponents(3);
+                hti->SetName("Im($\\mathbf{\\mathcal{H}}_T$)");
+                hti->SetNumberOfTuples( oct->GetNumberOfLeaves() );
+            // Hr field
+            vtkDoubleArray* hrr = vtkDoubleArray::New();
+                hrr->SetNumberOfComponents(3);
+                hrr->SetName("Re($\\mathbf{\\mathcal{H}}_R$)");
+                hrr->SetNumberOfTuples( oct->GetNumberOfLeaves() );
+            vtkDoubleArray* hri = vtkDoubleArray::New();
+                hri->SetNumberOfComponents(3);
+                hri->SetName("Im($\\mathbf{\\mathcal{H}}_R$)");
+                hri->SetNumberOfTuples( oct->GetNumberOfLeaves() );
 
             //Real LeafVol(0);
             for (auto leaf : LeafDict) {
@@ -234,7 +254,16 @@ namespace Lemma {
                 kid->InsertTuple1( leaf.first, leaf.first );
                 //LeafVol += std::real(leaf.second);
             }
-            //std::cout << "\n\nLeafVol=" << LeafVol << std::endl;
+
+            for (auto leaf : LeafHt ) {
+                htr->InsertTuple( leaf.first, leaf.second.real().data() );
+                hti->InsertTuple( leaf.first, leaf.second.imag().data() );
+            }
+
+            for (auto leaf : LeafHr ) {
+                hrr->InsertTuple( leaf.first, leaf.second.real().data() );
+                hri->InsertTuple( leaf.first, leaf.second.imag().data() );
+            }
 
             for (auto leaf : LeafDictIdx) {
                 kerr->InsertTuple1( leaf.first, leaf.second );
@@ -245,6 +274,10 @@ namespace Lemma {
             auto kmi = oct->GetLeafData()->AddArray(km);
             auto kidi = oct->GetLeafData()->AddArray(kid);
             auto keri = oct->GetLeafData()->AddArray(kerr);
+            auto khtr = oct->GetLeafData()->AddArray(htr);
+            auto khti = oct->GetLeafData()->AddArray(hti);
+            auto khrr = oct->GetLeafData()->AddArray(hrr);
+            auto khri = oct->GetLeafData()->AddArray(hri);
 
             auto write = vtkXMLHyperOctreeWriter::New();
                 //write.SetDataModeToAscii()
@@ -260,12 +293,20 @@ namespace Lemma {
             oct->GetLeafData()->RemoveArray( kmi );
             oct->GetLeafData()->RemoveArray( kidi );
             oct->GetLeafData()->RemoveArray( keri );
+            oct->GetLeafData()->RemoveArray( khtr );
+            oct->GetLeafData()->RemoveArray( khti );
+            oct->GetLeafData()->RemoveArray( khrr );
+            oct->GetLeafData()->RemoveArray( khri );
 
             kerr->Delete();
             kid->Delete();
             kr->Delete();
             ki->Delete();
             km->Delete();
+            htr->Delete();
+            hti->Delete();
+            hrr->Delete();
+            hri->Delete();
 
             }
 
@@ -313,7 +354,8 @@ namespace Lemma {
             F(iq) = -volume*Complex(0,Larmor)*Mn0Abs*(EBR.alpha+EBR.beta)*ejztr*sintheta*PhaseTerm;
             //TODO TEST FOR ASYMETRY
             //Real sintheta = std::sin(0.5*GAMMA*PulseI(iq)*Taup*(EBT.alpha-EBT.beta));
-            //F(iq) = volume * Complex(EBT.Bperp.real().norm(), EBT.Bperp.imag().norm()); //Complex(sintheta, EBT.Bperp.norm() );
+            //F(iq) = volume * Complex(EBT.Bperp.real().norm(), EBT.Bperp.imag().norm());
+            //Complex(sintheta, EBT.Bperp.norm() );
             //F(iq) = volume * Complex(EBT.alpha, EBT.beta);
             //F(iq) = volume * MU0*Hr.norm();
             //F(iq) = volume * EBT.err;
@@ -362,15 +404,12 @@ namespace Lemma {
         // This all follows Weichman et al., 2000.
         // There are some numerical stability issues that arise when the two terms in the beta
         // formulation are nearly equivalent. The current formulation will result in a null-valued
-        // beta, although this does not entirely recreate the true value of B perp.
-        // Reformulating may be welcome
+        // beta, although this does not entirely recreate the true value of B perp. Error is checked
+        // to be below 1%, but reformulating may be welcome
         EllipticB ElipB = EllipticB();
-        Vector3cr Bperp = B - B0hat.dot(B)*B0hat; // Eigen is OK with this
-        //Vector3r  Bperpr = B.real() - B0hat.dot(B.real())*B0hat;
-        //Vector3r  Bperpi = B.imag() - B0hat.dot(B.imag())*B0hat;
-        //Vector3cr Bperp = Bperpr + Complex(0,1)*Bperpi;
-        //ElipB.BperpdotB = Bperp.dot(B0hat);       // TODO remove
+        Vector3cr Bperp = B - B0hat.dot(B)*B0hat;
         Real BperpNorm  = Bperp.norm();
+        // These two are equivalent
         //Complex Bp2 = Bperp.transpose() * Bperp;
         Complex Bp2 = Bperp.conjugate().dot(Bperp);
         VectorXcr iB0 = Complex(0,1)*B0hat.cast<Complex>().array();
@@ -381,11 +420,11 @@ namespace Lemma {
         ElipB.bhat = ((Real)1./ElipB.alpha)*(((Real)1./ElipB.eizt)*Bperp.array()).real().array();
         ElipB.bhatp = B0hat.cross(ElipB.bhat);
         ElipB.zeta = std::real(std::log(ElipB.eizt)/Complex(0,1));
-        /* use as an error check decomposed field - computed actual */
+        /* as an error check decomposed field - computed actual */
 //         Vector3cr Bperp2 = ElipB.eizt * (ElipB.alpha * ElipB.bhat
 //                        + (Complex(0,1) * ElipB.beta * ElipB.bhatp) );
 //         ElipB.err = (Bperp-Bperp2).norm();
-//         if (ElipB.err > .01*Bperp.norm() ) {
+//         if (ElipB.err > .01*Bperp.norm() ) { // 1% error
 //             std::cout << "Elip error\n";
 //             Real Beta2 = sgn( std::real(iB0.dot( Bperp.cross(Bperp.conjugate())) )) *
 //                      (INVSQRT2*std::sqrt(BperpNorm*BperpNorm - std::abs(Bp2)));

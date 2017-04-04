@@ -41,8 +41,8 @@ int main(int argc, char** argv) {
         Kern->PushCoil( "Coil 2", Rx1 );
         Kern->SetLayeredEarthEM( earth );
 
-        Kern->SetIntegrationSize( (Vector3r() << 20.2151538,20.438572,100).finished() );
-        Kern->SetIntegrationOrigin( (Vector3r() << -10, -10, .5).finished() );
+        Kern->SetIntegrationSize( (Vector3r() << 200, 200., 100).finished() );
+        Kern->SetIntegrationOrigin( (Vector3r() << -100, -100, .5).finished() );
         Real tol(1e-13); // 13
         Kern->SetTolerance( tol ); // 1e-12
 
@@ -76,6 +76,10 @@ int main(int argc, char** argv) {
     // may be more natural to work with?
     std::vector<std::string> tx = {std::string("Coil 1")};
     std::vector<std::string> rx = {std::string("Coil 2")};
+
+    //std::cout << "KERNEL.yaml" << std::endl;
+    //std::cout << *Kern << std::endl;
+
     Kern->CalculateK0( tx, rx, true ); // 3rd argument is vtk output
 
     std::ofstream dout = std::ofstream(std::string("Rx-")+std::string(argv[3])+std::string(".dat"));
