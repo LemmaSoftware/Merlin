@@ -148,6 +148,7 @@ namespace Lemma {
                 EMEarths[tx]->AttachFieldPoints( cpoints );
          		EMEarths[tx]->SetFieldsToCalculate(H);
                 // TODO query for method, altough with flat antennae, this is fastest
+                //EMEarths[tx]->SetHankelTransformMethod(FHTKEY201);
                 EMEarths[tx]->SetHankelTransformMethod(ANDERSON801);
                 EMEarths[tx]->SetTxRxMode(TX);
                 TxRx[tx]->SetCurrent(1.);
@@ -162,6 +163,7 @@ namespace Lemma {
                     EMEarths[rx]->AttachFieldPoints( cpoints );
          		    EMEarths[rx]->SetFieldsToCalculate(H);
                     // TODO query for method, altough with flat antennae, this is fastest
+                    //EMEarths[rx]->SetHankelTransformMethod(FHTKEY201);
                     EMEarths[rx]->SetHankelTransformMethod(ANDERSON801);
                     EMEarths[rx]->SetTxRxMode(RX);
                     TxRx[rx]->SetCurrent(1.);
@@ -313,6 +315,7 @@ namespace Lemma {
             //Real sintheta = std::sin(0.5*GAMMA*PulseI(iq)*Taup*(EBT.alpha-EBT.beta));
             //F(iq) = volume * Complex(EBT.Bperp.real().norm(), EBT.Bperp.imag().norm()); //Complex(sintheta, EBT.Bperp.norm() );
             //F(iq) = volume * Complex(EBT.alpha, EBT.beta);
+            //F(iq) = volume * MU0*Hr.norm();
             //F(iq) = volume * EBT.err;
             //F(iq) = volume * sintheta;
         }
@@ -356,13 +359,20 @@ namespace Lemma {
     //      Method:  ComputeV0Cell
     //--------------------------------------------------------------------------------------
     EllipticB KernelV0::EllipticFieldRep (const Vector3cr& B, const Vector3r& B0hat) {
-        // This all follows Weichman et. al., 2000. There are some numerical stability isseus
-        // below. Reformulating may be welcome, may be in B field calculation too.
+        // This all follows Weichman et al., 2000.
+        // There are some numerical stability issues that arise when the two terms in the beta
+        // formulation are nearly equivalent. The current formulation will result in a null-valued
+        // beta, although this does not entirely recreate the true value of B perp.
+        // Reformulating may be welcome
         EllipticB ElipB = EllipticB();
-        Vector3cr Bperp = B - B0hat.dot(B)*B0hat; // complex - real??
+        Vector3cr Bperp = B - B0hat.dot(B)*B0hat; // Eigen is OK with this
+        //Vector3r  Bperpr = B.real() - B0hat.dot(B.real())*B0hat;
+        //Vector3r  Bperpi = B.imag() - B0hat.dot(B.imag())*B0hat;
+        //Vector3cr Bperp = Bperpr + Complex(0,1)*Bperpi;
         //ElipB.BperpdotB = Bperp.dot(B0hat);       // TODO remove
         Real BperpNorm  = Bperp.norm();
-        Complex Bp2 = Bperp.transpose() * Bperp;
+        //Complex Bp2 = Bperp.transpose() * Bperp;
+        Complex Bp2 = Bperp.conjugate().dot(Bperp);
         VectorXcr iB0 = Complex(0,1)*B0hat.cast<Complex>().array();
         ElipB.eizt = std::sqrt(Bp2 / std::abs(Bp2));
         ElipB.alpha = INVSQRT2*std::sqrt(BperpNorm*BperpNorm + std::abs(Bp2));
@@ -372,16 +382,24 @@ namespace Lemma {
         ElipB.bhatp = B0hat.cross(ElipB.bhat);
         ElipB.zeta = std::real(std::log(ElipB.eizt)/Complex(0,1));
         /* use as an error check decomposed field - computed actual */
-        Vector3cr Bperp2 = ElipB.eizt * (ElipB.alpha * ElipB.bhat
-                       + (Complex(0,1) * ElipB.beta * ElipB.bhatp) );
-        ElipB.err = (Bperp-Bperp2).norm();
-        if (ElipB.err > 1e-12) {
-            std::cout << "Elip error\n";
-            std::cout << "Bperp \t" << Bperp.transpose() << std::endl;
-            std::cout << "Bperp2\t" << Bperp2.transpose() << std::endl;
-            std::cout << "err   \t" << ElipB.err << std::endl;
-        }
-        //std::cout << "B0\t" << B0hat.transpose() << std::endl;
+//         Vector3cr Bperp2 = ElipB.eizt * (ElipB.alpha * ElipB.bhat
+//                        + (Complex(0,1) * ElipB.beta * ElipB.bhatp) );
+//         ElipB.err = (Bperp-Bperp2).norm();
+//         if (ElipB.err > .01*Bperp.norm() ) {
+//             std::cout << "Elip error\n";
+//             Real Beta2 = sgn( std::real(iB0.dot( Bperp.cross(Bperp.conjugate())) )) *
+//                      (INVSQRT2*std::sqrt(BperpNorm*BperpNorm - std::abs(Bp2)));
+//             Vector3cr Bperp3 = ElipB.eizt * (ElipB.alpha * ElipB.bhat
+//                            + (Complex(0,1) * Beta2 * ElipB.bhatp) );
+//             std::cout << "Beta term0\t" << (INVSQRT2*std::sqrt(BperpNorm*BperpNorm - std::abs(Bp2))) << std::endl;
+//             std::cout << "Beta term1\t" << BperpNorm*BperpNorm << "\t" << std::abs(Bp2) << std::endl;
+//             std::cout << "Beta  \t" << ElipB.beta << std::endl;
+//             std::cout << "Beta2 \t" << Beta2 << std::endl;
+//             std::cout << "Bperp \t" << Bperp.transpose() << std::endl;
+//             std::cout << "Bperp2\t" << Bperp2.transpose() << std::endl;
+//             std::cout << "Bperp3\t" << Bperp3.transpose() << std::endl;
+//             std::cout << "err   \t" << ElipB.err << std::endl;
+//         }
         return ElipB;
     }
 
@@ -422,8 +440,6 @@ namespace Lemma {
         Eigen::Matrix<Complex, 3, 8> Ht = Eigen::Matrix<Complex, 3, 8>::Zero();
         Eigen::Matrix<Complex, 3, 8> Hr = Eigen::Matrix<Complex, 3, 8>::Zero();
         for ( auto EMCalc : EMEarths ) {
-
-
 
             EMCalc.second->GetFieldPoints()->ClearFields();
             EMCalc.second->CalculateWireAntennaFields();
@@ -565,6 +581,8 @@ namespace Lemma {
         for (int ichild=0; ichild<8; ++ichild) {
             curse->ToChild(ichild);
             LeafDict[curse->GetLeafId()] = ksum/(8.*vol);
+            LeafHt[curse->GetLeafId()] = Ht.col(ichild);
+            LeafHr[curse->GetLeafId()] = Hr.col(ichild);
             LeafDictIdx[curse->GetLeafId()] = nleaves;
             curse->ToParent();
         }

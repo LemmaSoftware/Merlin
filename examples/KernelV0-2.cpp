@@ -41,9 +41,9 @@ int main(int argc, char** argv) {
         Kern->PushCoil( "Coil 2", Rx1 );
         Kern->SetLayeredEarthEM( earth );
 
-        Kern->SetIntegrationSize( (Vector3r() << 200,200,100).finished() );
-        Kern->SetIntegrationOrigin( (Vector3r() << -100, -100, .5).finished() );
-        Real tol(1e-11); // 13
+        Kern->SetIntegrationSize( (Vector3r() << 20.2151538,20.438572,100).finished() );
+        Kern->SetIntegrationOrigin( (Vector3r() << -10, -10, .5).finished() );
+        Real tol(1e-13); // 13
         Kern->SetTolerance( tol ); // 1e-12
 
 //         Kern->AlignWithAkvoDataset( YAML::LoadFile(argv[2]) );
@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
         //VectorXr interfaces = VectorXr::LinSpaced( 41, .5, 45.5 ); // nlay, low, high
         //VectorXr interfaces = VectorXr::LinSpaced( 61, .5, 45.5 ); // nlay, low, high
         VectorXr interfaces = VectorXr::LinSpaced( 2, .5, 45.5 ); // nlay, low, high
-        Real thick = .5;
+        Real thick = .1;
         for (int ilay=1; ilay<interfaces.size(); ++ilay) {
             interfaces(ilay) = interfaces(ilay-1) + thick;
             thick *= 1.05;

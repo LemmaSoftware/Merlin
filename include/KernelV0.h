@@ -34,11 +34,13 @@
 
 namespace Lemma {
 
+    // Holds the elliptic field construction of Bperp
+    // commented out variables are for error checking
     struct EllipticB {
         Real      alpha;
         Real      beta;
         Real      zeta;
-        Real      err;
+//        Real      err;
         Complex   eizt;
 //        Complex   BperpdotB;
         Vector3r  bhat;
@@ -188,7 +190,7 @@ namespace Lemma {
          *   @param[in] rx is the list of receivers to use for a kernel, use the same labels as
          *              used in PushCoil. @see PushCoil
          *   @param[in] vtkOutput generates a VTK hyperoctree file as well, useful for visualization.
-         *              requires compilation of Lemma with VTK.
+         *              requires compilation of Lemma with VTK. The VTK files can become very large.
          */
         void CalculateK0 (const std::vector< std::string >& tx, const std::vector< std::string >& rx,
                 bool vtkOutput=false );
@@ -306,9 +308,11 @@ namespace Lemma {
         std::map< std::string , std::shared_ptr< EMEarth1D > >             EMEarths;
 
         #ifdef LEMMAUSEVTK
-        std::map< int, VectorXcr  >               LeafDict;
-        std::map< int, int     >                  LeafDictIdx;
-        std::map< int, Real     >                 LeafDictErr;
+        std::map< int, VectorXcr >                LeafDict;      // kernel sum for each q
+        std::map< int, VectorXcr >                LeafHt;        // Transmitter field
+        std::map< int, VectorXcr >                LeafHr;        // Receiver field
+        std::map< int, int >                      LeafDictIdx;   // index
+        std::map< int, Real >                     LeafDictErr;   // error value
         #endif
 
         // Physical constants and conversion factors
