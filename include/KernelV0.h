@@ -54,8 +54,9 @@ namespace Lemma {
 
     /**
      * \ingroup Merlin
-     * \brief
-     * \details
+     * \brief  Calculated the initial amplitude imaging kernel of a sNMR experiment
+     * \details This class calculates the imaging kernel for a free induction decay
+     *          pulse. The methodology follows from Weichman et al., 2000.
      */
     class KernelV0 : public LemmaObject {
 
@@ -108,7 +109,7 @@ namespace Lemma {
          */
         virtual YAML::Node Serialize() const;
 
-        /*
+        /**
          *  Factory method for generating concrete class.
          *  @return a std::shared_ptr of type KernelV0
          */
@@ -124,6 +125,32 @@ namespace Lemma {
 
         // ====================  OPERATIONS    =======================
 
+        /**
+         *   Calculates a single imaging kernel, however, phased arrays are supported
+         *   so that more than one transmitter and/or receiver can be specified.
+         *   @param[in] tx is the list of transmitters to use for a kernel, use the same labels as
+         *              used in PushCoil.
+         *   @param[in] rx is the list of receivers to use for a kernel, use the same labels as
+         *              used in PushCoil. @see PushCoil
+         *   @param[in] vtkOutput generates a VTK hyperoctree file as well, useful for visualization.
+         *              requires compilation of Lemma with VTK. The VTK files can become very large.
+         */
+        void CalculateK0 (const std::vector< std::string >& tx, const std::vector< std::string >& rx,
+                bool vtkOutput=false );
+
+        /**
+         *  Aligns the kernel settings with an Akvo Processed dataset.
+         */
+        void AlignWithAkvoDataset( const YAML::Node& node ) ;
+
+        /**
+         *   Assign transmiter coils
+         */
+        inline void PushCoil( const std::string& label, std::shared_ptr<PolygonalWireAntenna> ant ) {
+            TxRx[label] = ant;
+        }
+
+        // ====================  INQUIRY       =======================
         /**
          * @return std::shared_ptr<LayeredEarthEM>
          */
@@ -171,31 +198,6 @@ namespace Lemma {
         }		// -----  end of method KernelV0::SetIntegrationOrigin  -----
 
         /**
-         *  Aligns the kernel settings with an Akvo Processed dataset.
-         */
-        void AlignWithAkvoDataset( const YAML::Node& node ) ;
-
-        /**
-         *   Assign transmiter coils
-         */
-        inline void PushCoil( const std::string& label, std::shared_ptr<PolygonalWireAntenna> ant ) {
-            TxRx[label] = ant;
-        }
-
-        /**
-         *   Calculates a single imaging kernel, however, phased arrays are supported
-         *   so that more than one transmitter and/or receiver can be specified.
-         *   @param[in] tx is the list of transmitters to use for a kernel, use the same labels as
-         *              used in PushCoil.
-         *   @param[in] rx is the list of receivers to use for a kernel, use the same labels as
-         *              used in PushCoil. @see PushCoil
-         *   @param[in] vtkOutput generates a VTK hyperoctree file as well, useful for visualization.
-         *              requires compilation of Lemma with VTK. The VTK files can become very large.
-         */
-        void CalculateK0 (const std::vector< std::string >& tx, const std::vector< std::string >& rx,
-                bool vtkOutput=false );
-
-        /**
          *  Sets the temperature, which has implications in calculation of \f$ M_N^{(0)}\f$. Units in
          *  Kelvin.
          */
@@ -205,12 +207,15 @@ namespace Lemma {
 
         /**
          *  Sets the tolerance to use for making the adaptive mesh
-         *
+         *  @param[in] ttol is the tolerance to use
          */
         inline void SetTolerance(const Real& ttol) {
             tol = ttol;
         }
 
+        /**
+         *  @param[in] taup sets the pulse duration
+         */
         inline void SetPulseDuration(const Real& taup) {
             Taup = taup;
         }
@@ -223,7 +228,6 @@ namespace Lemma {
             Interfaces = iface;
         }
 
-        // ====================  INQUIRY       =======================
         /**
          *  Returns the name of the underlying class, similiar to Python's type
          *  @return string of class name
@@ -302,7 +306,7 @@ namespace Lemma {
         MatrixXcr   Kern;
 
         std::shared_ptr< LayeredEarthEM >         SigmaModel = nullptr;
-        std::shared_ptr< FieldPoints >            cpoints;
+        std::shared_ptr< FieldPoints >            cpoints = nullptr;
 
         std::map< std::string , std::shared_ptr< PolygonalWireAntenna > >  TxRx;
         std::map< std::string , std::shared_ptr< EMEarth1D > >             EMEarths;
