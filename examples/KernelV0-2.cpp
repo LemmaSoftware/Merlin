@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
 
         Kern->SetIntegrationSize( (Vector3r() << 200, 200., 100).finished() );
         Kern->SetIntegrationOrigin( (Vector3r() << -100, -100, .5).finished() );
-        Real tol(1e-13); // 13
+        Real tol(1e-11); // 13
         Kern->SetTolerance( tol ); // 1e-12
 
 //         Kern->AlignWithAkvoDataset( YAML::LoadFile(argv[2]) );
@@ -64,11 +64,11 @@ int main(int argc, char** argv) {
 
         //VectorXr interfaces = VectorXr::LinSpaced( 41, .5, 45.5 ); // nlay, low, high
         //VectorXr interfaces = VectorXr::LinSpaced( 61, .5, 45.5 ); // nlay, low, high
-        VectorXr interfaces = VectorXr::LinSpaced( 2, .5, 45.5 ); // nlay, low, high
+        VectorXr interfaces = VectorXr::LinSpaced( 61, .5, 45.5 ); // nlay, low, high
         Real thick = .1;
         for (int ilay=1; ilay<interfaces.size(); ++ilay) {
             interfaces(ilay) = interfaces(ilay-1) + thick;
-            thick *= 1.05;
+            thick *= 1.075;
         }
         Kern->SetDepthLayerInterfaces( interfaces ); // nlay, low, high
 
@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
     //std::cout << "KERNEL.yaml" << std::endl;
     //std::cout << *Kern << std::endl;
 
-    Kern->CalculateK0( tx, rx, true ); // 3rd argument is vtk output
+    Kern->CalculateK0( tx, rx, false ); // 3rd argument is vtk output
 
     std::ofstream dout = std::ofstream(std::string("Rx-")+std::string(argv[3])+std::string(".dat"));
     dout << "# Transmitters: ";

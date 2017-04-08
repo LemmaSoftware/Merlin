@@ -325,7 +325,6 @@ namespace Lemma {
     //       Class:  KernelV0
     //      Method:  f
     //--------------------------------------------------------------------------------------
-#if 1
     VectorXcr KernelV0::f( const Vector3r& r, const Real& volume, const Vector3cr& Ht, const Vector3cr& Hr ) {
 
         // Compute the elliptic fields
@@ -352,26 +351,9 @@ namespace Lemma {
             // Compute the tipping angle
             Real sintheta = std::sin(0.5*GAMMA*PulseI(iq)*Taup*(EBT.alpha-EBT.beta));
             F(iq) = -volume*Complex(0,Larmor)*Mn0Abs*(EBR.alpha+EBR.beta)*ejztr*sintheta*PhaseTerm;
-            //TODO TEST FOR ASYMETRY
-            //Real sintheta = std::sin(0.5*GAMMA*PulseI(iq)*Taup*(EBT.alpha-EBT.beta));
-            //F(iq) = volume * Complex(EBT.Bperp.real().norm(), EBT.Bperp.imag().norm());
-            //Complex(sintheta, EBT.Bperp.norm() );
-            //F(iq) = volume * Complex(EBT.alpha, EBT.beta);
-            //F(iq) = volume * MU0*Hr.norm();
-            //F(iq) = volume * EBT.err;
-            //F(iq) = volume * sintheta;
         }
-
         return F;
     }
-#endif
-#if 0
-    VectorXcr KernelV0::f( const Vector3r& r, const Real& volume, const Vector3cr& Ht, const Vector3cr& Hr ) {
-        VectorXcr F = VectorXcr::Ones( PulseI.size() );
-        F.array() *= volume * Complex(Ht.norm(), Hr.norm()); //*Ht.dot(Hr);
-        return F;
-    }
-#endif
 
 //     //--------------------------------------------------------------------------------------
 //     //       Class:  KernelV0
@@ -404,8 +386,8 @@ namespace Lemma {
         // This all follows Weichman et al., 2000.
         // There are some numerical stability issues that arise when the two terms in the beta
         // formulation are nearly equivalent. The current formulation will result in a null-valued
-        // beta, although this does not entirely recreate the true value of B perp. Error is checked
-        // to be below 1%, but reformulating may be welcome
+        // beta, or can underflow. However, this does not entirely recreate the true value of B perp.
+        // Error is checked to be below 1%, but reformulating for numeric stability may be welcome
         EllipticB ElipB = EllipticB();
         Vector3cr Bperp = B - B0hat.dot(B)*B0hat;
         Real BperpNorm  = Bperp.norm();
@@ -415,8 +397,13 @@ namespace Lemma {
         VectorXcr iB0 = Complex(0,1)*B0hat.cast<Complex>().array();
         ElipB.eizt = std::sqrt(Bp2 / std::abs(Bp2));
         ElipB.alpha = INVSQRT2*std::sqrt(BperpNorm*BperpNorm + std::abs(Bp2));
-        ElipB.beta = std::copysign(1, std::real(iB0.dot( Bperp.cross(Bperp.conjugate())) )) *
+        //ElipB.beta = std::copysign(1, std::real(iB0.dot( Bperp.cross(Bperp.conjugate())) )) *
+        ElipB.beta = sgn( std::real(iB0.dot( Bperp.cross(Bperp.conjugate())) )) *
                      (INVSQRT2*std::sqrt(BperpNorm*BperpNorm - std::abs(Bp2)));
+        // Correct underflow in beta calculation
+        // could use cerrno instead...
+        // http://en.cppreference.com/w/cpp/numeric/math/sqrt
+        if (ElipB.beta != ElipB.beta) ElipB.beta = 0;
         ElipB.bhat = ((Real)1./ElipB.alpha)*(((Real)1./ElipB.eizt)*Bperp.array()).real().array();
         ElipB.bhatp = B0hat.cross(ElipB.bhat);
         ElipB.zeta = std::real(std::log(ElipB.eizt)/Complex(0,1));
@@ -468,7 +455,6 @@ namespace Lemma {
                         0, step[1], step[2],
                   step[0], step[1], step[2] ).finished();
 
-        MatrixXcr kvals(8, PulseI.size());       // individual kernel vals
         cpoints->ClearFields();
         for (int ichild=0; ichild<8; ++ichild) {
             Vector3r cp = pos;    // Eigen complains about combining these
@@ -498,6 +484,7 @@ namespace Lemma {
             }
         }
 
+        MatrixXcr kvals(8, PulseI.size());       // individual kernel vals
         for (int ichild=0; ichild<8; ++ichild) {
             Vector3r cp = pos;    // Eigen complains about combining these
             cp += posadd.row(ichild);
