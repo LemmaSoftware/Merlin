@@ -69,7 +69,6 @@ namespace Lemma {
 
         if (node["Coils"]) {
             for ( auto coil : node["Coils"] ) {
-                std::cout << "coil " << coil.first << coil.second << std::endl;
                 if ( coil.second.Tag() == "PolygonalWireAntenna" ) {
                     TxRx[ coil.first.as<std::string>() ] = PolygonalWireAntenna::DeSerialize( coil.second );
                 } else {
