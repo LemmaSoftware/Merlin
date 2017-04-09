@@ -23,23 +23,29 @@ using namespace Lemma;
 
 int main(int argc, char** argv) {
 
-    if (argc<4) {
-        std::cout << "./KernelV0-2 earth.yaml tx.yaml  rx.yaml \n";
+    if (argc<3) {
+        //std::cout << "./KernelV0-2 earth.yaml tx.yaml  rx.yaml \n";
+        std::cout << "./KernelV0-2 Kernel.yaml TxString RxString  \n";
         return(EXIT_SUCCESS);
     }
-    std::cout << "Using earth model: " << argv[1] << std::endl;
-    auto earth = LayeredEarthEM::DeSerialize( YAML::LoadFile(argv[1]) );
 
-    std::cout << "Using transmitter: " << argv[2] << std::endl;
-    auto Tx = PolygonalWireAntenna::DeSerialize( YAML::LoadFile(argv[2]) );
+    std::cout << "Using kernel paramaters: " << argv[1] << std::endl;
+    auto Kern = KernelV0::DeSerialize( YAML::LoadFile(argv[1]) );
 
-    std::cout << "Using receivers: " << argv[3] << std::endl;
-    auto Rx1 = PolygonalWireAntenna::DeSerialize( YAML::LoadFile(argv[3]) );
+//     std::cout << "Using earth model: " << argv[1] << std::endl;
+//     auto earth = LayeredEarthEM::DeSerialize( YAML::LoadFile(argv[2]) );
+//
+//     std::cout << "Using transmitter: " << argv[2] << std::endl;
+//     auto Tx = PolygonalWireAntenna::DeSerialize( YAML::LoadFile(argv[3]) );
+//
+//     std::cout << "Using receivers: " << argv[3] << std::endl;
+//     auto Rx1 = PolygonalWireAntenna::DeSerialize( YAML::LoadFile(argv[4]) );
 
+#if 0
     auto Kern = KernelV0::NewSP();
-        Kern->PushCoil( "Coil 1", Tx );
-        Kern->PushCoil( "Coil 2", Rx1 );
-        Kern->SetLayeredEarthEM( earth );
+        //Kern->PushCoil( "Coil 1", Tx );
+        //Kern->PushCoil( "Coil 2", Rx1 );
+        //Kern->SetLayeredEarthEM( earth );
 
         Kern->SetIntegrationSize( (Vector3r() << 200, 200., 100).finished() );
         Kern->SetIntegrationOrigin( (Vector3r() << -100, -100, .5).finished() );
@@ -64,22 +70,20 @@ int main(int argc, char** argv) {
 
         //VectorXr interfaces = VectorXr::LinSpaced( 41, .5, 45.5 ); // nlay, low, high
         //VectorXr interfaces = VectorXr::LinSpaced( 61, .5, 45.5 ); // nlay, low, high
-        VectorXr interfaces = VectorXr::LinSpaced( 61, .5, 45.5 ); // nlay, low, high
+        VectorXr interfaces = VectorXr::LinSpaced( 58, .5, 45.5 ); // nlay, low, high
         Real thick = .1;
         for (int ilay=1; ilay<interfaces.size(); ++ilay) {
             interfaces(ilay) = interfaces(ilay-1) + thick;
-            thick *= 1.075;
+            thick *= 1.085;
         }
         Kern->SetDepthLayerInterfaces( interfaces ); // nlay, low, high
 
     // We could, I suppose, take the earth model in here? For non-linear that
     // may be more natural to work with?
-    std::vector<std::string> tx = {std::string("Coil 1")};
-    std::vector<std::string> rx = {std::string("Coil 2")};
+#endif
 
-    //std::cout << "KERNEL.yaml" << std::endl;
-    //std::cout << *Kern << std::endl;
-
+    std::vector<std::string> tx = {std::string(argv[2])};
+    std::vector<std::string> rx = {std::string(argv[3])};
     Kern->CalculateK0( tx, rx, false ); // 3rd argument is vtk output
 
     std::ofstream dout = std::ofstream(std::string("Rx-")+std::string(argv[3])+std::string(".dat"));
@@ -91,10 +95,9 @@ int main(int argc, char** argv) {
     for (auto lp : rx) {
         dout << lp << "\t";
     }
-    dout << "\n# Tolerance: " << tol << std::endl;
-
-        dout << interfaces.transpose() << std::endl;
-        dout << I.transpose() << std::endl;
+    dout << "\n# Tolerance: " << Kern->GetTolerance() << std::endl;
+        dout << Kern->GetInterfaces().transpose() << std::endl;
+        dout << Kern->GetPulseDuration()*Kern->GetPulseCurrent().transpose() << std::endl;
         dout << "#real\n";
         dout << Kern->GetKernel().real() << std::endl;
         dout << "#imag\n";
@@ -105,6 +108,7 @@ int main(int argc, char** argv) {
     //std::ofstream out = std::ofstream(std::string("k-coincident.yaml"));
     out << *Kern;
     out.close();
+
 }
 
 

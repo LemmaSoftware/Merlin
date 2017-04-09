@@ -166,6 +166,27 @@ namespace Lemma {
         }
 
         /**
+         * @return the integration tolerance
+         */
+        inline Real GetTolerance ( ) {
+            return tol;
+        }
+
+        /**
+         * @return the layer interfaces
+         */
+        inline VectorXr GetInterfaces ( ) {
+            return Interfaces;
+        }
+
+        /**
+         * @return the pulse peak current
+         */
+        inline VectorXr GetPulseCurrent ( ) {
+            return PulseI;
+        }
+
+        /**
          * @param[in] value the 1D-EM model used for calculations
          */
         inline void SetLayeredEarthEM ( std::shared_ptr< LayeredEarthEM > value ) {
@@ -300,10 +321,10 @@ namespace Lemma {
         Vector3r                                  Size;
         Vector3r                                  Origin;
 
-        VectorXr   PulseI;
-        VectorXr   Interfaces;
+        VectorXr                                  PulseI;
+        VectorXr                                  Interfaces;
 
-        MatrixXcr   Kern;
+        MatrixXcr                                 Kern;
 
         std::shared_ptr< LayeredEarthEM >         SigmaModel = nullptr;
         std::shared_ptr< FieldPoints >            cpoints = nullptr;

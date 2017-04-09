@@ -47,6 +47,37 @@ namespace Lemma {
     // Description:  DeSerializing constructor (locked)
     //--------------------------------------------------------------------------------------
     KernelV0::KernelV0 (const YAML::Node& node, const ctor_key&) : LemmaObject(node) {
+        //node["PulseType"] = "FID";
+        Larmor = node["Larmor"].as<Real>();
+        Temperature = node["Temperature"].as<Real>();
+        tol = node["tol"].as<Real>();
+        minLevel = node["minLevel"].as<int>();
+        maxLevel = node["maxLevel"].as<int>();
+        Taup = node["Taup"].as<Real>();
+        PulseI = node["PulseI"].as<VectorXr>();
+        Interfaces = node["Interfaces"].as<VectorXr>();
+        Size = node["IntegrationSize"].as<Vector3r>();
+        Origin = node["IntegrationOrigin"].as<Vector3r>();
+
+        if (node["SigmaModel"]) {
+            if (node["SigmaModel"].Tag() == "LayeredEarthEM") {
+                SigmaModel = LayeredEarthEM::DeSerialize(node["SigmaModel"]);
+            } else {
+                SigmaModel = LayeredEarthEM::DeSerialize( YAML::LoadFile( node["SigmaModel"].as<std::string>() ));
+            }
+        }
+
+        if (node["Coils"]) {
+            for ( auto coil : node["Coils"] ) {
+                std::cout << "coil " << coil.first << coil.second << std::endl;
+                if ( coil.second.Tag() == "PolygonalWireAntenna" ) {
+                    TxRx[ coil.first.as<std::string>() ] = PolygonalWireAntenna::DeSerialize( coil.second );
+                } else {
+                    TxRx[ coil.first.as<std::string>() ] =
+                        PolygonalWireAntenna::DeSerialize( YAML::LoadFile(coil.second.as<std::string>()) );
+                }
+            }
+        }
 
     }  // -----  end of method KernelV0::KernelV0  (constructor)  -----
 
@@ -77,25 +108,33 @@ namespace Lemma {
         node.SetTag( GetName() );
 
         // Coils Transmitters & Receivers
-        for ( auto txm : TxRx) {
-            node[txm.first] = txm.second->Serialize();
+        if (!TxRx.empty()) {
+            for ( auto txm : TxRx) {
+                node["Coils"][txm.first] = txm.second->Serialize();
+            }
         }
 
         // LayeredEarthEM
-        node["SigmaModel"] = SigmaModel->Serialize();
+        if (SigmaModel != nullptr) {
+            node["SigmaModel"] = SigmaModel->Serialize();
+        }
 
+        node["PulseType"] = "FID";
         node["Larmor"] = Larmor;
         node["Temperature"] = Temperature;
         node["tol"] = tol;
         node["minLevel"] = minLevel;
         node["maxLevel"] = maxLevel;
         node["Taup"] = Taup;
-
         node["PulseI"] = PulseI;
         node["Interfaces"] = Interfaces;
+        node["IntegrationSize"] = Size;
+        node["IntegrationOrigin"] = Origin;
 
-        for ( int ilay=0; ilay<Interfaces.size()-1; ++ilay ) {
-            node["Kern-" + to_string(ilay) ] = static_cast<VectorXcr>(Kern.row(ilay));
+        if (Kern.array().abs().any() > 1e-16) {
+            for ( int ilay=0; ilay<Interfaces.size()-1; ++ilay ) {
+                node["K0"]["layer-" + to_string(ilay) ] = static_cast<VectorXcr>(Kern.row(ilay));
+            }
         }
         return node;
     }		// -----  end of method KernelV0::Serialize  -----
@@ -132,9 +171,8 @@ namespace Lemma {
     //       Class:  KernelV0
     //      Method:  DeSerialize
     //--------------------------------------------------------------------------------------
-    void KernelV0::CalculateK0 (const std::vector< std::string>& Tx, const std::vector<std::string >& Rx,
-            bool vtkOutput ) {
-
+    void KernelV0::CalculateK0 (const std::vector< std::string>& Tx,
+                                const std::vector<std::string >& Rx, bool vtkOutput ) {
         // Set up
         Larmor = SigmaModel->GetMagneticFieldMagnitude()*GAMMA; // in rad  2246.*2.*PI;
 
@@ -174,7 +212,8 @@ namespace Lemma {
         std::cout << "Calculating K0 kernel\n";
         Kern = MatrixXcr::Zero( Interfaces.size()-1, PulseI.size() );
         for (ilay=0; ilay<Interfaces.size()-1; ++ilay) {
-            std::cout << "Layer " << ilay << "\tfrom " << Interfaces(ilay) <<" to "<< Interfaces(ilay+1) << std::endl;
+            std::cout << "Layer " << ilay << "\tfrom " << Interfaces(ilay) <<" to "
+                      << Interfaces(ilay+1) << std::endl;
             Size(2) = Interfaces(ilay+1) - Interfaces(ilay);
             Origin(2) = Interfaces(ilay);
             IntegrateOnOctreeGrid( vtkOutput );
@@ -205,7 +244,6 @@ namespace Lemma {
             EvaluateKids2( Size, 0, cpos, VectorXcr::Ones(PulseI.size()), oct, curse );
 
             for (int iq=0; iq<PulseI.size(); ++iq) {
-
             // Fill in leaf data
             vtkDoubleArray* kr = vtkDoubleArray::New();
                 kr->SetNumberOfComponents(1);
@@ -245,7 +283,6 @@ namespace Lemma {
                 hri->SetNumberOfComponents(3);
                 hri->SetName("Im($\\mathbf{\\mathcal{H}}_R$)");
                 hri->SetNumberOfTuples( oct->GetNumberOfLeaves() );
-
             //Real LeafVol(0);
             for (auto leaf : LeafDict) {
                 kr->InsertTuple1( leaf.first, std::real(leaf.second(iq)) );
@@ -309,7 +346,6 @@ namespace Lemma {
             hri->Delete();
 
             }
-
             curse->Delete();
             oct->Delete();
         #else
@@ -337,7 +373,6 @@ namespace Lemma {
 
         // Compute Mn0
         Vector3r Mn0 = ComputeMn0(1.0, B0);
-        //std::cout << "Mn0\t" << Mn0.transpose() << std::endl;
         Real Mn0Abs = Mn0.norm();
 
         // Compute phase delay
