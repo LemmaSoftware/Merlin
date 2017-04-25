@@ -373,6 +373,7 @@ namespace Lemma {
         // Compute Mn0
         Vector3r Mn0 = ComputeMn0(1.0, B0);
         Real Mn0Abs = Mn0.norm();
+        //std::cout << "Mn0\t" << Mn0.transpose() << std::endl;
 
         // Compute phase delay
         // TODO add transmiiter current phase and delay induced apparent time phase!

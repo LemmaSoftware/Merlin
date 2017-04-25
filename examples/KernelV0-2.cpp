@@ -24,7 +24,7 @@ using namespace Lemma;
 int main(int argc, char** argv) {
 
     if (argc<3) {
-        std::cout << "./KernelV0-2 Kernel.yaml TxString RxString  \n";
+        std::cout << "./KernelV0-2 Kernel.yaml TxString RxString  vtkoutput<true/false> \n";
         return(EXIT_SUCCESS);
     }
 
@@ -33,7 +33,14 @@ int main(int argc, char** argv) {
 
     std::vector<std::string> tx = {std::string(argv[2])};
     std::vector<std::string> rx = {std::string(argv[3])};
-    Kern->CalculateK0( tx, rx, false ); // 3rd argument is vtk output
+
+    std::cout << "argv[4]\t" << argv[4] << std::endl;
+    if( std::string(argv[4]) == "true") {
+        Kern->CalculateK0( tx, rx, true ); // 3rd argument is vtk output
+    } else {
+        std::cout << "not using VTK" << std::endl;
+        Kern->CalculateK0( tx, rx, false ); // 3rd argument is vtk output
+    }
 
     // TODO fix python post-processing so this is not necessary
     // Save in simplified format for easy python plotting
