@@ -23,7 +23,7 @@ using namespace Lemma;
 
 int main(int argc, char** argv) {
 
-    if (argc<3) {
+    if (argc<5) {
         std::cout << "./KernelV0-2 Kernel.yaml TxString RxString  vtkoutput<true/false> \n";
         return(EXIT_SUCCESS);
     }
@@ -35,7 +35,8 @@ int main(int argc, char** argv) {
     std::vector<std::string> rx = {std::string(argv[3])};
 
     std::cout << "argv[4]\t" << argv[4] << std::endl;
-    if( std::string(argv[4]) == "true") {
+    if( std::string(argv[4]) == "true" || std::string(argv[4]) == "True") {
+        std::cout << "Using VTK, output files may be very large" << std::endl;
         Kern->CalculateK0( tx, rx, true ); // 3rd argument is vtk output
     } else {
         std::cout << "not using VTK" << std::endl;
