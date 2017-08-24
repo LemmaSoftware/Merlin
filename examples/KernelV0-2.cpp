@@ -23,9 +23,9 @@ using namespace Lemma;
 
 int main(int argc, char** argv) {
 
-    if (argc<3) {
+    if (argc<5) {
         std::cout << "./KernelV0-2 Kernel.yaml TxString RxString  vtkoutput<true/false> \n";
-        return(EXIT_SUCCESS);
+        return(EXIT_FAILURE);
     }
 
     std::cout << "Using kernel paramaters: " << argv[1] << std::endl;
