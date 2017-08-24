@@ -139,7 +139,7 @@ namespace Lemma {
                 bool vtkOutput=false );
 
         /**
-         *  Aligns the kernel settings with an Akvo Processed dataset.
+         *  Aligns the kernel pulse settings with an Akvo Processed dataset.
          */
         void AlignWithAkvoDataset( const YAML::Node& node ) ;
 

@@ -53,11 +53,18 @@ namespace Lemma {
         tol = node["tol"].as<Real>();
         minLevel = node["minLevel"].as<int>();
         maxLevel = node["maxLevel"].as<int>();
-        Taup = node["Taup"].as<Real>();
-        PulseI = node["PulseI"].as<VectorXr>();
         Interfaces = node["Interfaces"].as<VectorXr>();
         Size = node["IntegrationSize"].as<Vector3r>();
         Origin = node["IntegrationOrigin"].as<Vector3r>();
+
+        if (node["AlignWithAkvoData"]) {
+            // Match pulse info with dataset
+            AlignWithAkvoDataset( YAML::LoadFile( node["AlignWithAkvoData"].as<std::string>()));
+        } else {
+            // Read Pulse info direct from Kernel file
+            PulseI = node["PulseI"].as<VectorXr>();
+            Taup = node["Taup"].as<Real>();
+        }
 
         if (node["SigmaModel"]) {
             if (node["SigmaModel"].Tag() == "LayeredEarthEM") {
@@ -159,8 +166,8 @@ namespace Lemma {
             std::cout << node["processed"] << std::endl;
         }
         if (node["pulseType"].as<std::string>() == "FID") {
-            PulseI  = node["Pulse 1"]["current"].as<VectorXr>();
-            this->SetPulseDuration( node["pulseLength"].as<double>() );
+            PulseI  = node["Pulses"]["Pulse 1"]["current"].as<VectorXr>();
+            this->SetPulseDuration( node["pulseLength"][0].as<double>() );
         } else {
             std::cerr << "Pulse Type " << node["PulseType"] << "is not supported\n";
         }
