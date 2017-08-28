@@ -114,6 +114,30 @@ namespace Lemma {
         return FID;
     }		// -----  end of method ForwardFID::ForwardModel  -----
 
+    //--------------------------------------------------------------------------------------
+    //       Class:  ForwardFID
+    //      Method:  LogSpaced
+    //--------------------------------------------------------------------------------------
+    void ForwardFID::SetLogSpacedWindows ( const Real& first, const Real& last,
+        const int& n ) {
+        WindowEdges = VectorXr::Zero(n);
+        Real m = 1./(n-1.);
+        Real quotient = std::pow(last/first, m);
+        WindowEdges[0] = first;
+        for (int i=1; i<n; ++i) {
+            WindowEdges[i] = WindowEdges[i-1]*quotient;
+        }
+        WindowCentres = (WindowEdges.head(n-1) + WindowEdges.tail(n-1)) / 2;
+        return;
+    }		// -----  end of method ForwardFID::LogSpaced  -----
+
+    //--------------------------------------------------------------------------------------
+    //       Class:  ForwardFID
+    //      Method:  CalcQTMatrix
+    //--------------------------------------------------------------------------------------
+    void ForwardFID::CalcQTMatrix (  ) {
+        return ;
+    }		// -----  end of method ForwardFID::CalcQTMatrix  -----
 
 } // ----  end of namespace Lemma  ----
 

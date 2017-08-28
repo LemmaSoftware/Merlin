@@ -3,6 +3,7 @@
 #include "Coupling.h"
 #include "LoopInteractions.h"
 #include "DataFID.h"
+#include "LayeredEarthMR.h"
 
 /* vim: set tabstop=4 expandtab: */
 /* vim: set filetype=cpp: */

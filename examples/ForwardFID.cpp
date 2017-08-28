@@ -27,13 +27,16 @@ int main(int argc, char** argv) {
     //    return(EXIT_FAILURE);
     }
 
+    auto Model = LayeredEarthMR::NewSP();
+        Model->SetNumberOfLayers(20);
+        Model->SetT2StarBins(10, 500, 20);
+        std::cout << *Model << std::endl;
+
     auto Forward = ForwardFID::NewSP();
-        Forward->SetWindowEdges( VectorXr::LinSpaced(10,0,1) );
-
-    std::cout << *Forward << std::endl;
-
-    //auto FID = Forward->ForwardModel();
-    //std::cout << *FID << std::endl;
+        //Forward->SetWindowEdges( VectorXr::LinSpaced(10,0,1) );
+        Forward->SetLogSpacedWindows(10,1000,30);
+        //auto FID =  Forward->ForwardModel(Model);
+    //std::cout << *Forward << std::endl;
 
     return EXIT_SUCCESS;
 }

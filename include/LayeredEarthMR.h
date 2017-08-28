@@ -9,7 +9,7 @@
 
 /**
  * @file
- * @date      08/28/2017 08:49:51 AM
+ * @date      08/28/2017 03:32:26 PM
  * @version   $Id$
  * @author    Trevor Irons (ti)
  * @email     tirons@egi.utah.edu
@@ -17,28 +17,24 @@
  * @copyright Copyright (c) 2017, Lemma Software, LLC
  */
 
-#ifndef  FORWARDFID_INC
-#define  FORWARDFID_INC
+#ifndef  LAYEREDEARTHMR_INC
+#define  LAYEREDEARTHMR_INC
+
 
 #pragma once
-#include "LayeredEarthEM.h"
-#include "PolygonalWireAntenna.h"
-#include "EMEarth1D.h"
-#include "MerlinObject.h"
-#include "DataFID.h"
-#include "KernelV0.h"
+#include "LayeredEarth.h"
+#include "MerlinConfig.h"
 
 namespace Lemma {
 
     /**
      * \ingroup Merlin
-     * \brief Forward modelling for FID sNMR pulses
-     * \details This class performs forward modelling of sNMR
-     *          FID experiments.
+     * \brief
+     * \details
      */
-    class ForwardFID : public MerlinObject {
+    class LayeredEarthMR : public LayeredEarth {
 
-        friend std::ostream &operator<<(std::ostream &stream, const ForwardFID &ob);
+        friend std::ostream &operator<<(std::ostream &stream, const LayeredEarthMR &ob);
 
         protected:
         /*
@@ -57,9 +53,9 @@ namespace Lemma {
          *       The reason that the method is public is to enable the use
          *       of make_shared whilst enforcing the use of shared_ptr,
          *       in c++-17, this curiosity may be resolved.
-         * @see ForwardFID::NewSP
+         * @see LayeredEarthMR::NewSP
          */
-        explicit ForwardFID ( const ctor_key& );
+        explicit LayeredEarthMR ( const ctor_key& );
 
         /**
          * DeSerializing constructor.
@@ -67,9 +63,9 @@ namespace Lemma {
          *       The reason that the method is public is to enable the use
          *       of make_shared whilst enforcing the use of shared_ptr,
          *       in c++-17, this curiosity may be resolved.
-         * @see ForwardFID::DeSerialize
+         * @see LayeredEarthMR::DeSerialize
          */
-        ForwardFID ( const YAML::Node& node, const ctor_key& );
+        LayeredEarthMR ( const YAML::Node& node, const ctor_key& );
 
         /**
          * Default destructor.
@@ -78,52 +74,37 @@ namespace Lemma {
          *       public in order to allow for the use of the more efficient
          *       make_shared constructor.
          */
-        virtual ~ForwardFID ();
+        virtual ~LayeredEarthMR ();
 
         /**
          *  Uses YAML to serialize this object.
          *  @return a YAML::Node
-         *  @see ForwardFID::DeSerialize
+         *  @see LayeredEarthMR::DeSerialize
          */
         virtual YAML::Node Serialize() const;
 
         /*
          *  Factory method for generating concrete class.
-         *  @return a std::shared_ptr of type ForwardFID
+         *  @return a std::shared_ptr of type LayeredEarthMR
          */
-        static std::shared_ptr< ForwardFID > NewSP();
+        static std::shared_ptr< LayeredEarthMR > NewSP();
 
         /**
-         *   Constructs an ForwardFID object from a YAML::Node.
-         *   @see ForwardFID::Serialize
+         *   Constructs an LayeredEarthMR object from a YAML::Node.
+         *   @see LayeredEarthMR::Serialize
          */
-        static std::shared_ptr<ForwardFID> DeSerialize(const YAML::Node& node);
+        static std::shared_ptr<LayeredEarthMR> DeSerialize(const YAML::Node& node);
 
         // ====================  OPERATORS     =======================
 
         // ====================  OPERATIONS    =======================
 
-        /**
-         *  Performs forward model calculation based on input parameters
-         *  @return Merlin class representing data
-         */
-        std::shared_ptr<DataFID> ForwardModel();
-
         // ====================  ACCESS        =======================
-        /**
-         *  Sets windows using the edges in a Eigen VectorXr
-         *  @param[in] Edges are the edges of the time gate windows
-         */
-        void SetWindowEdges( const VectorXr& Edges );
 
-        /**
-         *  Sets the windows for calculation as a series of log spaced windows.
-         *  This method calculates the window edges, so the centres will be n-1
-         *  @param[in] first is the beginning of the vector
-         *  @param[in] last is the last element in the vector
-         *  @param[in] n is the number of elements
-         */
-        void SetLogSpacedWindows(const Real& first, const Real& last, const int& n);
+
+        void SetNumberOfLayers(const int& nlay);
+
+        void SetT2StarBins(const Real& first, const Real& last, const int& nT2);
 
         // ====================  INQUIRY       =======================
         /**
@@ -139,33 +120,24 @@ namespace Lemma {
         // ====================  LIFECYCLE     =======================
 
         /** Copy is disabled */
-        ForwardFID( const ForwardFID& ) = delete;
+        LayeredEarthMR( const LayeredEarthMR& ) = delete;
 
         // ====================  DATA MEMBERS  =========================
+
         private:
 
-        void CalcQTMatrix(  );
-
         /** ASCII string representation of the class name */
-        static constexpr auto CName = "ForwardFID";
+        static constexpr auto CName = "LayeredEarthMR";
 
-        /** Imaging kernel used in calculation */
-        std::shared_ptr< KernelV0 >   Kernel = nullptr;
+        VectorXr T2StarBins;
+        VectorXr T2StarBinEdges;  // Convenience for pcolor
 
-        /** Time gate windows */
-        VectorXr WindowEdges;
-
-        /** Time gate centres */
-        VectorXr WindowCentres;
-
-        /** Include RDP effects? */
-        bool RDP = false;
-
-    }; // -----  end of class  ForwardFID  -----
-
+    }; // -----  end of class  LayeredEarthMR  -----
 }  // -----  end of namespace Lemma ----
 
 /* vim: set tabstop=4 expandtab: */
 /* vim: set filetype=cpp: */
 
-#endif   // ----- #ifndef FORWARDFID_INC  -----
+
+#endif   // ----- #ifndef LAYEREDEARTHMR_INC  -----
+
