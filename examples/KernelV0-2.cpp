@@ -68,6 +68,7 @@ int main(int argc, char** argv) {
     out << *Kern;
     out.close();
 
+    return EXIT_SUCCESS;
 }
 
 

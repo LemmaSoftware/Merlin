@@ -1,24 +1,37 @@
+# Configure Merlin 
+set(MERLIN_VERSION_MAJOR "0")
+set(MERLIN_VERSION_MINOR "0")
+set(MERLIN_VERSION_PATCH "1")
+set(MERLIN_VERSION "\"${MERLIN_VERSION_MAJOR}.${MERLIN_VERSION_MINOR}.${MERLIN_VERSION_PATCH}\"")
+set(MERLIN_VERSION_NOQUOTES "${MERLIN_VERSION_MAJOR}.${MERLIN_VERSION_MINOR}.${MERLIN_VERSION_PATCH}")
+
+configure_file (
+	"${CMAKE_CURRENT_SOURCE_DIR}/config/MerlinConfig.h.in"
+	"${PROJECT_BINARY_DIR}/include/MerlinConfig.h"
+)
+install ( FILES  ${PROJECT_BINARY_DIR}/include/MerlinConfig.h   DESTINATION ${CMAKE_INSTALL_PREFIX}/include/Lemma/ )
+
 add_subdirectory("src")
 add_library( merlin ${MERLINSOURCE} )  
 target_include_directories( merlin PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include" )
 
 set_target_properties(merlin PROPERTIES 
-	VERSION  "${LEMMA_VERSION_NOQUOTES}"
-	SOVERSION "${LEMMA_VERSION_MAJOR}.${LEMMA_VERSION_MINOR}"
-	PROJECT_LABEL "FDEM1D ${LABEL_SUFFIX}"
+	VERSION  "${MERLIN_VERSION_NOQUOTES}"
+	SOVERSION "${MERLIN_VERSION_MAJOR}.${MERLIN_VERSION_MINOR}"
+	PROJECT_LABEL "MERLIN ${LABEL_SUFFIX}"
 )
 
 # Linking
 target_link_libraries(merlin "lemmacore" "fdem1d" )
 
 # Linking
-if ( LEMMA_VTK6_SUPPORT OR LEMMA_VTK7_SUPPORT ) 
+if ( MERLIN_VTK6_SUPPORT OR MERLIN_VTK7_SUPPORT ) 
 	target_link_libraries(merlin ${VTK_LIBRARIES})
 #	target_link_libraries(lemmacore "matplot")
 endif()
 
 # Testing
-if (LEMMA_ENABLE_TESTING)
+if (MERLIN_ENABLE_TESTING)
 	add_subdirectory(testing)
 endif()
 
