@@ -26,17 +26,20 @@ int main(int argc, char** argv) {
         std::cout << "./ForwardFID Kernel.yaml TxString RxString  vtkoutput<true/false> \n";
     //    return(EXIT_FAILURE);
     }
+    auto Kernel = KernelV0::DeSerialize(YAML::LoadFile(argv[1]));
+    //    std::cout << *Kernel;
 
     auto Model = LayeredEarthMR::NewSP();
-        Model->SetNumberOfLayers(20);
+        Model->AlignWithKernel(Kernel);
         Model->SetT2StarBins(10, 500, 20);
         std::cout << *Model << std::endl;
 
+/*
     auto Forward = ForwardFID::NewSP();
         //Forward->SetWindowEdges( VectorXr::LinSpaced(10,0,1) );
         Forward->SetLogSpacedWindows(10,1000,30);
         //auto FID =  Forward->ForwardModel(Model);
     //std::cout << *Forward << std::endl;
-
+*/
     return EXIT_SUCCESS;
 }

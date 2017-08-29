@@ -24,6 +24,7 @@
 #pragma once
 #include "LayeredEarth.h"
 #include "MerlinConfig.h"
+#include "KernelV0.h"
 
 namespace Lemma {
 
@@ -83,7 +84,7 @@ namespace Lemma {
          */
         virtual YAML::Node Serialize() const;
 
-        /*
+        /**
          *  Factory method for generating concrete class.
          *  @return a std::shared_ptr of type LayeredEarthMR
          */
@@ -102,9 +103,20 @@ namespace Lemma {
         // ====================  ACCESS        =======================
 
 
-        void SetNumberOfLayers(const int& nlay);
 
+        /**
+         *  Sets the T2StarBins to solve for, these are log spaced
+         *  @param[in] first is the beginning of the bins
+         *  @param[in] last is the end of the bins
+         *  @param[in] nT2 is the number of bins
+         */
         void SetT2StarBins(const Real& first, const Real& last, const int& nT2);
+
+        /**
+         *  Convenience method, that aligns model with a Kernel
+         *  @param[in] Kern input kernel to align with
+         */
+        void AlignWithKernel( std::shared_ptr<KernelV0> Kern );
 
         // ====================  INQUIRY       =======================
         /**
@@ -129,8 +141,17 @@ namespace Lemma {
         /** ASCII string representation of the class name */
         static constexpr auto CName = "LayeredEarthMR";
 
+        /**
+         * Sets the number of layers
+         */
+        void SetNumberOfLayers(const int& nlay);
+
+        /** Initializes the model matrix */
+        void InitModelMat();
+
         VectorXr T2StarBins;
         VectorXr T2StarBinEdges;  // Convenience for pcolor
+        MatrixXr ModelMat;
 
     }; // -----  end of class  LayeredEarthMR  -----
 }  // -----  end of namespace Lemma ----

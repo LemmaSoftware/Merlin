@@ -77,6 +77,7 @@ namespace Lemma {
         node["Merlin_VERSION"] = MERLIN_VERSION;
         node["T2StarBins"] = T2StarBins;
         node["T2StarBinEdges"] = T2StarBinEdges;
+        node["ModelMat"] = ModelMat;
         return node;
     }		// -----  end of method LayeredEarthMR::Serialize  -----
 
@@ -96,9 +97,22 @@ namespace Lemma {
     //      Method:  SetNumberOfLayers
     //--------------------------------------------------------------------------------------
     void LayeredEarthMR::SetNumberOfLayers ( const int& nlay  ) {
+        NumberOfLayers = nlay;
+        NumberOfInterfaces = nlay+1;
         return ;
     }		// -----  end of method LayeredEarthMR::SetNumberOfLayers  -----
 
+    //--------------------------------------------------------------------------------------
+    //       Class:  LayeredEarthMR
+    //      Method:  AlignWithKernel
+    //--------------------------------------------------------------------------------------
+    void LayeredEarthMR::AlignWithKernel ( std::shared_ptr<KernelV0> Kern ) {
+        int nlay = Kern->GetInterfaces().size()-1;
+        SetNumberOfLayers( nlay );
+        LayerThickness = Kern->GetInterfaces().tail(nlay) - Kern->GetInterfaces().head(nlay) ;
+        SetMagneticFieldComponents( Kern->GetSigmaModel()->GetMagneticField(), TESLA);
+        return ;
+    }		// -----  end of method LayeredEarthMR::AlignWithKernel  -----
 
     //--------------------------------------------------------------------------------------
     //       Class:  LayeredEarthMR
@@ -113,15 +127,21 @@ namespace Lemma {
             T2StarBinEdges[i] = T2StarBinEdges[i-1]*quotient;
         }
         T2StarBins = (T2StarBinEdges.head(nT2) + T2StarBinEdges.tail(nT2)) / 2;
+        InitModelMat();
         return;
     }		// -----  end of method LayeredEarthMR::SetNumberOfT2StarBins  -----
 
 
+    //--------------------------------------------------------------------------------------
+    //       Class:  LayeredEarthMR
+    //      Method:  InitModelMat
+    //--------------------------------------------------------------------------------------
+    void LayeredEarthMR::InitModelMat (  ) {
+        ModelMat = MatrixXr::Zero( T2StarBins.size(), NumberOfLayers );
+        return ;
+    }		// -----  end of method LayeredEarthMR::InitModelMat  -----
+
 } // ----  end of namespace Lemma  ----
-
-
-
-
 
 /* vim: set tabstop=4 expandtab: */
 /* vim: set filetype=cpp: */
