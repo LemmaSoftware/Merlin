@@ -78,6 +78,9 @@ namespace Lemma {
         node["T2StarBins"] = T2StarBins;
         node["T2StarBinEdges"] = T2StarBinEdges;
         node["ModelMat"] = ModelMat;
+        node["Thingy"].push_back( "Hello" );
+        node["Thingy"].push_back( "Whirld" );
+
         return node;
     }		// -----  end of method LayeredEarthMR::Serialize  -----
 
@@ -137,7 +140,7 @@ namespace Lemma {
     //      Method:  InitModelMat
     //--------------------------------------------------------------------------------------
     void LayeredEarthMR::InitModelMat (  ) {
-        ModelMat = MatrixXr::Zero( T2StarBins.size(), NumberOfLayers );
+        ModelMat = MatrixXr::Zero( NumberOfLayers, T2StarBins.size() );
         return ;
     }		// -----  end of method LayeredEarthMR::InitModelMat  -----
 
