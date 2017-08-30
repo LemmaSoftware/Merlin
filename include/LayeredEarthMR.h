@@ -149,9 +149,10 @@ namespace Lemma {
         /** Initializes the model matrix */
         void InitModelMat();
 
-        VectorXr T2StarBins;
-        VectorXr T2StarBinEdges;  // Convenience for pcolor
-        MatrixXr ModelMat;
+        VectorXr Interfaces;      // Layer interfaces, for pcolor
+        VectorXr T2StarBins;      // the actual T2* values
+        VectorXr T2StarBinEdges;  // Convenience, for pcolor
+        MatrixXr ModelMat;        // The NMR model, in matrix form
 
     }; // -----  end of class  LayeredEarthMR  -----
 }  // -----  end of namespace Lemma ----

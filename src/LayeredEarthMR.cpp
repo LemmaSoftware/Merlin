@@ -45,7 +45,10 @@ namespace Lemma {
     // Description:  DeSerializing constructor (locked)
     //--------------------------------------------------------------------------------------
     LayeredEarthMR::LayeredEarthMR (const YAML::Node& node, const ctor_key&) : LayeredEarth(node) {
-
+        Interfaces = node["Interfaces"].as<VectorXr>();
+        T2StarBins = node["T2StarBins"].as<VectorXr>();
+        T2StarBinEdges = node["T2StarBinEdges"].as<VectorXr>();
+        ModelMat = node["ModelMat"].as<MatrixXr>();
     }  // -----  end of method LayeredEarthMR::LayeredEarthMR  (constructor)  -----
 
     //--------------------------------------------------------------------------------------
@@ -75,12 +78,10 @@ namespace Lemma {
         node.SetTag( GetName() );
         // FILL IN CLASS SPECIFICS HERE
         node["Merlin_VERSION"] = MERLIN_VERSION;
+        node["Interfaces"] = Interfaces;
         node["T2StarBins"] = T2StarBins;
         node["T2StarBinEdges"] = T2StarBinEdges;
         node["ModelMat"] = ModelMat;
-        node["Thingy"].push_back( "Hello" );
-        node["Thingy"].push_back( "Whirld" );
-
         return node;
     }		// -----  end of method LayeredEarthMR::Serialize  -----
 
@@ -112,6 +113,7 @@ namespace Lemma {
     void LayeredEarthMR::AlignWithKernel ( std::shared_ptr<KernelV0> Kern ) {
         int nlay = Kern->GetInterfaces().size()-1;
         SetNumberOfLayers( nlay );
+        Interfaces = Kern->GetInterfaces();
         LayerThickness = Kern->GetInterfaces().tail(nlay) - Kern->GetInterfaces().head(nlay) ;
         SetMagneticFieldComponents( Kern->GetSigmaModel()->GetMagneticField(), TESLA);
         return ;
