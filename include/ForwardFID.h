@@ -24,9 +24,11 @@
 #include "LayeredEarthEM.h"
 #include "PolygonalWireAntenna.h"
 #include "EMEarth1D.h"
+
 #include "MerlinObject.h"
 #include "DataFID.h"
 #include "KernelV0.h"
+#include "LayeredEarthMR.h"
 
 namespace Lemma {
 
@@ -107,7 +109,7 @@ namespace Lemma {
          *  Performs forward model calculation based on input parameters
          *  @return Merlin class representing data
          */
-        std::shared_ptr<DataFID> ForwardModel();
+        std::shared_ptr<DataFID> ForwardModel( std::shared_ptr<LayeredEarthMR> );
 
         // ====================  ACCESS        =======================
         /**
@@ -124,6 +126,11 @@ namespace Lemma {
          *  @param[in] n is the number of elements
          */
         void SetLogSpacedWindows(const Real& first, const Real& last, const int& n);
+
+        /**
+         *   @param[in] K0 is the initial amplitude imaging kernel
+         */
+        void SetKernel( std::shared_ptr< KernelV0 > K0 );
 
         // ====================  INQUIRY       =======================
         /**
@@ -144,7 +151,11 @@ namespace Lemma {
         // ====================  DATA MEMBERS  =========================
         private:
 
-        void CalcQTMatrix(  );
+        /**
+         * Calculates the QT matrix
+         * @param[in] T2StarBins are the T2* bins to use
+         */
+        void CalcQTMatrix( VectorXr T2StarBins );
 
         /** ASCII string representation of the class name */
         static constexpr auto CName = "ForwardFID";
@@ -157,6 +168,9 @@ namespace Lemma {
 
         /** Time gate centres */
         VectorXr WindowCentres;
+
+        /** QT matrix */
+        MatrixXcr QT;
 
         /** Include RDP effects? */
         bool RDP = false;

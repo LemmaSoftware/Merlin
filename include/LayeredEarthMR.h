@@ -102,7 +102,20 @@ namespace Lemma {
 
         // ====================  ACCESS        =======================
 
+        /**
+         * @return a VectorXr of the T2* bins
+         */
+        VectorXr GetT2StarBins();
 
+        /**
+         * @return a flattened version of the model matrix
+         */
+        VectorXr GetModelVector();
+
+        /**
+         * @return the model matrix
+         */
+        MatrixXr GetModelMatrix();
 
         /**
          *  Sets the T2StarBins to solve for, these are log spaced

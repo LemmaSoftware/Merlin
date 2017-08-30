@@ -7,6 +7,9 @@ target_link_libraries(  KernelV0-2  "lemmacore" "fdem1d" "merlin")
 add_executable( KV0-3loops KV0-3loops.cpp  )
 target_link_libraries(  KV0-3loops  "lemmacore" "fdem1d" "merlin")
 
+add_executable( ModelAligner ModelAligner.cpp ) 
+target_link_libraries(  ModelAligner  "lemmacore" "fdem1d" "merlin")
+
 add_executable( ForwardFID ForwardFID.cpp  )
 target_link_libraries(  ForwardFID  "lemmacore" "fdem1d" "merlin")
 

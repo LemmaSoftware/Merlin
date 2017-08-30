@@ -85,6 +85,12 @@ namespace Lemma {
             }
         }
 
+        if (node["K0"]) {
+            Kern = MatrixXcr::Zero( Interfaces.size()-1, PulseI.size()  ).array() + 1.;
+            for ( int ilay=0; ilay<Interfaces.size()-1; ++ilay ) {
+                Kern.row(ilay) = node["K0"]["layer-" + to_string(ilay) ].as<VectorXcr>();
+            }
+        }
     }  // -----  end of method KernelV0::KernelV0  (constructor)  -----
 
     //--------------------------------------------------------------------------------------
@@ -137,6 +143,7 @@ namespace Lemma {
         node["IntegrationSize"] = Size;
         node["IntegrationOrigin"] = Origin;
 
+        // TODO, use better matrix encapulation
         if (Kern.array().abs().any() > 1e-16) {
             for ( int ilay=0; ilay<Interfaces.size()-1; ++ilay ) {
                 node["K0"]["layer-" + to_string(ilay) ] = static_cast<VectorXcr>(Kern.row(ilay));

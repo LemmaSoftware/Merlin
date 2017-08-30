@@ -75,6 +75,11 @@ namespace Lemma {
         YAML::Node node = MerlinObject::Serialize();
         node.SetTag( GetName() );
         // FILL IN CLASS SPECIFICS HERE
+        node["FID_REAL"] = FIDData.real().eval();
+        node["FID_IMAG"] = FIDData.imag().eval();
+        node["WindowCentres"] = WindowCentres;
+        node["WindowEdges"] =  WindowEdges;
+        node["PulseMoment"] = PulseMoment;
         return node;
     }		// -----  end of method DataFID::Serialize  -----
 

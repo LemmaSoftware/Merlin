@@ -9,12 +9,12 @@
 
 /**
  * @file
- * @date      08/28/2017 09:07:04 AM
+ * @date      08/30/2017 04:08:53 AM
  * @version   $Id$
  * @author    Trevor Irons (ti)
  * @email     tirons@egi.utah.edu
  * @copyright Copyright (c) 2017, University of Utah
- * @copyright Copyright (c) 2017, Lemma Software, LLC
+ * @copyright Copyright (c) 2017, Trevor Irons & Lemma Software, LLC
  */
 
 #include <Merlin>
@@ -22,22 +22,21 @@ using namespace Lemma;
 
 int main(int argc, char** argv) {
 
-    if (argc<3) {
-        std::cout << "./ForwardFID Kernel.yaml Model.yaml  \n";
+    if (argc<5) {
+        std::cout << "ModelAligner aligns a dummy model with a pre-calculated"
+                  << "imaging kernel.\n\n"
+                  << "./ModelAligner Kernel.yaml T2Low T2High nT2  \n";
+
         return(EXIT_FAILURE);
     }
+
     auto Kernel = KernelV0::DeSerialize(YAML::LoadFile(argv[1]));
-    //    std::cout << *Kernel;
 
-    auto Model = LayeredEarthMR::DeSerialize(YAML::LoadFile(argv[2]));
-    //    std::cout << *Model << std::endl;
+    auto Model = LayeredEarthMR::NewSP();
+        Model->AlignWithKernel(Kernel);
+        Model->SetT2StarBins(10, 500, 20);
 
-    auto Forward = ForwardFID::NewSP();
-        //Forward->SetWindowEdges( VectorXr::LinSpaced(10,0,1) );
-        Forward->SetLogSpacedWindows(10,1000,30);
-        Forward->SetKernel(Kernel);
-        auto FID = Forward->ForwardModel(Model);
-    std::cout << *FID << std::endl;
-
-    return EXIT_SUCCESS;
+    std::cout << *Model << std::endl;
 }
+
+

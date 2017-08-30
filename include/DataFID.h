@@ -36,6 +36,8 @@ namespace Lemma {
 
         friend std::ostream &operator<<(std::ostream &stream, const DataFID &ob);
 
+        friend class ForwardFID;
+
         protected:
         /*
          *  This key is used to lock the constructor. It is protected so that inhereted
@@ -123,6 +125,15 @@ namespace Lemma {
 
         /** ASCII string representation of the class name */
         static constexpr auto CName = "DataFID";
+
+        /** Holds the actual data */
+        MatrixXcr   FIDData;
+
+        VectorXr    WindowCentres;
+
+        VectorXr    WindowEdges;
+
+        VectorXr    PulseMoment;
 
     }; // -----  end of class  DataFID  -----
 }  // -----  end of namespace Lemma ----

@@ -146,6 +146,35 @@ namespace Lemma {
         return ;
     }		// -----  end of method LayeredEarthMR::InitModelMat  -----
 
+
+    //--------------------------------------------------------------------------------------
+    //       Class:  LayeredEarthMR
+    //      Method:  GetT2StarBins
+    //--------------------------------------------------------------------------------------
+    VectorXr LayeredEarthMR::GetT2StarBins (  ) {
+        return T2StarBins ;
+    }		// -----  end of method LayeredEarthMR::GetT2StarBins  -----
+
+
+    //--------------------------------------------------------------------------------------
+    //       Class:  LayeredEarthMR
+    //      Method:  GetModelMatrix
+    //--------------------------------------------------------------------------------------
+    MatrixXr LayeredEarthMR::GetModelMatrix (  ) {
+        return ModelMat ;
+    }		// -----  end of method LayeredEarthMR::GetModelMatrix  -----
+
+
+    //--------------------------------------------------------------------------------------
+    //       Class:  LayeredEarthMR
+    //      Method:  GetModelVector
+    //--------------------------------------------------------------------------------------
+    VectorXr LayeredEarthMR::GetModelVector (  ) {
+        VectorXr B(Eigen::Map<VectorXr>(ModelMat.data(), ModelMat.cols()*ModelMat.rows()));
+        return B;
+    }		// -----  end of method LayeredEarthMR::GetModelVector  -----
+
+
 } // ----  end of namespace Lemma  ----
 
 /* vim: set tabstop=4 expandtab: */

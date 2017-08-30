@@ -109,8 +109,28 @@ namespace Lemma {
     //       Class:  ForwardFID
     //      Method:  ForwardModel
     //--------------------------------------------------------------------------------------
-    std::shared_ptr<DataFID> ForwardFID::ForwardModel (  ) {
+    std::shared_ptr<DataFID> ForwardFID::ForwardModel ( std::shared_ptr<LayeredEarthMR> Mod ) {
+
+        MatrixXcr K0 = Kernel->GetKernel();
+        int nq = K0.cols();
+        int nt = WindowCentres.size();
+
+        CalcQTMatrix( Mod->GetT2StarBins() );
+
+        // Forward calculation is just a matrix vector product
+        VectorXcr data = QT*Mod->GetModelVector();
+
+        // TODO add noise
+
+        // rearrange solution back into a matrix
+        MatrixXcr B(Eigen::Map<MatrixXcr>(data.data(), nt, nq));
+        //std::cout << B.imag().transpose() <<std::endl;
         auto FID = DataFID::NewSP();
+
+        FID->FIDData = B;
+        FID->WindowEdges = WindowEdges;
+        FID->WindowCentres = WindowCentres;
+        FID->PulseMoment = Kernel->GetPulseCurrent()*Kernel->GetPulseDuration();
         return FID;
     }		// -----  end of method ForwardFID::ForwardModel  -----
 
@@ -131,11 +151,56 @@ namespace Lemma {
         return;
     }		// -----  end of method ForwardFID::LogSpaced  -----
 
+
+    //--------------------------------------------------------------------------------------
+    //       Class:  ForwardFID
+    //      Method:  SetKernel
+    //--------------------------------------------------------------------------------------
+    void ForwardFID::SetKernel ( std::shared_ptr< KernelV0 > K0 ) {
+        Kernel = K0;
+        return ;
+    }		// -----  end of method ForwardFID::SetKernel  -----
+
+
     //--------------------------------------------------------------------------------------
     //       Class:  ForwardFID
     //      Method:  CalcQTMatrix
     //--------------------------------------------------------------------------------------
-    void ForwardFID::CalcQTMatrix (  ) {
+    void ForwardFID::CalcQTMatrix ( VectorXr T2Bins ) {
+        MatrixXcr K0 = Kernel->GetKernel();
+        VectorXcr K0r(Eigen::Map<VectorXcr>(K0.data(), K0.cols()*K0.rows()));
+
+        // K0 = nq     \times nlay
+        // Qt = nq*nt  \times nlay*nT2
+
+        int nLay = K0.rows();
+        int nq = K0.cols();
+        int nt = WindowCentres.size();
+        int nT2 = T2Bins.size();
+        //std::cout << "# nLay " << nLay << std::endl;
+        //std::cout << "# nq " << nq << std::endl;
+        //std::cout << "# nt " << nt << std::endl;
+        //std::cout << "# nT2 " << nT2 << std::endl;
+
+        QT = MatrixXcr::Zero( nq*nt, nLay*nT2 );
+//        std::cout << "K0 " << K0.rows() << "\t" << K0.cols() << std::endl;
+//        std::cout << "QT " << QT.rows() << "\t" << QT.cols() << std::endl;
+
+        // Ugly!
+        int ir=0;
+        for (int iq=0; iq<nq; ++iq) {
+            for (int it=0; it<nt; ++it) {
+                int ic=0;
+                for (int ilay=0; ilay<nLay; ++ilay) {
+                    for (int it2=0; it2<nT2; ++it2) {
+                        QT(ir, ic) = K0(ilay, iq) * std::exp( -WindowCentres[it]/T2Bins[it2] );
+                        ++ic;
+                    }
+                }
+                ++ir;
+            }
+        }
+//        std::cout << QT.imag() << std::endl;
         return ;
     }		// -----  end of method ForwardFID::CalcQTMatrix  -----
 
