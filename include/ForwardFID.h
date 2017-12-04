@@ -21,6 +21,7 @@
 #define  FORWARDFID_INC
 
 #pragma once
+#include <random>
 #include "LayeredEarthEM.h"
 #include "PolygonalWireAntenna.h"
 #include "EMEarth1D.h"
@@ -132,6 +133,12 @@ namespace Lemma {
          */
         void SetKernel( std::shared_ptr< KernelV0 > K0 );
 
+        /**
+         *  @param[in] floor is the standard deviation of the noise (zero mean),
+         *             defaults to zero
+         */
+        void SetNoiseFloor( const Real& floor );
+
         // ====================  INQUIRY       =======================
         /**
          *  Returns the name of the underlying class, similiar to Python's type
@@ -148,7 +155,7 @@ namespace Lemma {
         /** Copy is disabled */
         ForwardFID( const ForwardFID& ) = delete;
 
-        // ====================  DATA MEMBERS  =========================
+
         private:
 
         /**
@@ -157,11 +164,15 @@ namespace Lemma {
          */
         void CalcQTMatrix( VectorXr T2StarBins );
 
+        // ====================  DATA MEMBERS  =========================
         /** ASCII string representation of the class name */
         static constexpr auto CName = "ForwardFID";
 
         /** Imaging kernel used in calculation */
         std::shared_ptr< KernelV0 >   Kernel = nullptr;
+
+        /** Noise floor for additive Gaussian noise */
+        Real NoiseFloor = 0.;
 
         /** Time gate windows */
         VectorXr WindowEdges;

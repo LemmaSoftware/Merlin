@@ -107,6 +107,17 @@ namespace Lemma {
 
     //--------------------------------------------------------------------------------------
     //       Class:  ForwardFID
+    //      Method:  SetNoiseFloor
+    //--------------------------------------------------------------------------------------
+    void ForwardFID::SetNoiseFloor ( const Real& floor ) {
+        assert (floor > 0.);
+        NoiseFloor = floor;
+        return ;
+    }		// -----  end of method ForwardFID::SetNoiseFloor  -----
+
+
+    //--------------------------------------------------------------------------------------
+    //       Class:  ForwardFID
     //      Method:  ForwardModel
     //--------------------------------------------------------------------------------------
     std::shared_ptr<DataFID> ForwardFID::ForwardModel ( std::shared_ptr<LayeredEarthMR> Mod ) {
@@ -120,14 +131,33 @@ namespace Lemma {
         // Forward calculation is just a matrix vector product
         VectorXcr data = QT*Mod->GetModelVector();
 
-        // TODO add noise
-
         // rearrange solution back into a matrix
-        MatrixXcr B(Eigen::Map<MatrixXcr>(data.data(), nt, nq));
+        MatrixXcr B(Eigen::Map<MatrixXcr>(data.data(), nt, nq)); // Complex Data
+        MatrixXr N = MatrixXr::Zero(nt, nq);  // Noise
+        B.real() = B.array().abs();
+        B.imag() *= 0.;
+
+        // TODO add noise
+        if (NoiseFloor > 1e-5) {
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::normal_distribution<> d(0,1e-9*NoiseFloor);
+            for (int iq=0; iq<nq; ++iq) {
+                for (int it=0; it<nt; ++it) {
+                    B(it, iq) += Complex(d(gen), d(gen)) /
+                        std::sqrt( WindowEdges(it+1)-WindowEdges(it) );
+                    N(it,iq) = (1e-9*NoiseFloor) / std::sqrt(WindowEdges(it+1)-WindowEdges(it));
+                }
+            }
+        }
+
         //std::cout << B.imag().transpose() <<std::endl;
         auto FID = DataFID::NewSP();
 
         FID->FIDData = B;
+        FID->NoiseEstimate = N;
+        FID->Qt = QT;
+        FID->TrueModel = Mod->GetModelVector();
         FID->WindowEdges = WindowEdges;
         FID->WindowCentres = WindowCentres;
         FID->PulseMoment = Kernel->GetPulseCurrent()*Kernel->GetPulseDuration();

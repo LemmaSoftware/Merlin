@@ -36,6 +36,7 @@ int main(int argc, char** argv) {
         //Forward->SetWindowEdges( VectorXr::LinSpaced(10,0,1) );
         Forward->SetLogSpacedWindows(10,1000,30);
         Forward->SetKernel(Kernel);
+        Forward->SetNoiseFloor(50); // nV
         auto FID = Forward->ForwardModel(Model);
     std::cout << *FID << std::endl;
 

@@ -129,6 +129,14 @@ namespace Lemma {
         /** Holds the actual data */
         MatrixXcr   FIDData;
 
+        /** Estimate of noise for each datum */
+        MatrixXr   NoiseEstimate;
+
+        /** Forward model matrix */
+        MatrixXcr   Qt;
+
+        VectorXr    TrueModel;
+
         VectorXr    WindowCentres;
 
         VectorXr    WindowEdges;

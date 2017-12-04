@@ -25,7 +25,7 @@ namespace Lemma {
     // ====================  FRIEND METHODS  =====================
 
     std::ostream &operator << (std::ostream &stream, const DataFID &ob) {
-        stream << ob.Serialize()  << "\n---\n"; // End of doc ---
+        stream <<"%YAML 1.2\n---\n" << ob.Serialize()  << "\n"; // End of doc ---
         return stream;
     }
 
@@ -77,6 +77,12 @@ namespace Lemma {
         // FILL IN CLASS SPECIFICS HERE
         node["FID_REAL"] = FIDData.real().eval();
         node["FID_IMAG"] = FIDData.imag().eval();
+        //node["Qt_REAL"] = Qt.real().eval();
+        //node["Qt_IMAG"] = Qt.imag().eval();
+        MatrixXr QTM = Qt.array().abs();
+        //node["Qt_MOD"] = QTM;
+        //node["TrueModel"] = TrueModel;
+        node["NoiseEstimate"] = NoiseEstimate;
         node["WindowCentres"] = WindowCentres;
         node["WindowEdges"] =  WindowEdges;
         node["PulseMoment"] = PulseMoment;

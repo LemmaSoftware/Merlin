@@ -24,7 +24,7 @@ namespace Lemma {
     // ====================  FRIEND METHODS  =====================
 
     std::ostream &operator << (std::ostream &stream, const LayeredEarthMR &ob) {
-        stream << ob.Serialize()  << "\n---\n"; // End of doc ---
+        stream << ob.Serialize()  << "\n"; // End of doc ---
         return stream;
     }
 
@@ -170,7 +170,10 @@ namespace Lemma {
     //      Method:  GetModelVector
     //--------------------------------------------------------------------------------------
     VectorXr LayeredEarthMR::GetModelVector (  ) {
-        VectorXr B(Eigen::Map<VectorXr>(ModelMat.data(), ModelMat.cols()*ModelMat.rows()));
+        //VectorXr B(Eigen::Map<VectorXr>(ModelMat.data(), ModelMat.cols()*ModelMat.rows()));
+        MatrixXr MT = ModelMat.transpose();
+        VectorXr B(Eigen::Map<VectorXr>(MT.data(), MT.cols()*MT.rows()));
+        //VectorXr B(Eigen::Map<VectorXr>(ModelMat.transpose().data(), ModelMat.cols()*ModelMat.rows()));
         return B;
     }		// -----  end of method LayeredEarthMR::GetModelVector  -----
 

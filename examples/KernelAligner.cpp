@@ -9,7 +9,7 @@
 
 /**
  * @file
- * @date      08/30/2017 04:08:53 AM
+ * @date      12/01/2017 10:29:26 PM
  * @version   $Id$
  * @author    Trevor Irons (ti)
  * @email     tirons@egi.utah.edu
@@ -17,26 +17,16 @@
  * @copyright Copyright (c) 2017, Trevor Irons & Lemma Software, LLC
  */
 
-#include <Merlin>
+#include "Merlin"
+
 using namespace Lemma;
 
 int main(int argc, char** argv) {
-
-    if (argc<5) {
-        std::cout << "ModelAligner aligns a dummy model with a pre-calculated"
-                  << "imaging kernel.\n\n"
-                  << "./ModelAligner Kernel.yaml T2Low T2High nT2  \n";
-
-        return(EXIT_FAILURE);
+    if (argc<2) {
+        std::cout << "useage\n"
+                  << "./KernelAligner  <AkvoData> \n";
+        exit(EXIT_SUCCESS);
     }
-
-    auto Kernel = KernelV0::DeSerialize(YAML::LoadFile(argv[1]));
-
-    auto Model = LayeredEarthMR::NewSP();
-        Model->AlignWithKernel(Kernel);
-        Model->SetT2StarBins(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]));
-
-    std::cout << *Model << std::endl;
+    auto K0 = KernelV0::NewSP();
+    std::cout << *K0 << std::endl;
 }
-
-
