@@ -47,6 +47,7 @@ namespace Lemma {
     // Description:  DeSerializing constructor (locked)
     //--------------------------------------------------------------------------------------
     KernelV0::KernelV0 (const YAML::Node& node, const ctor_key&) : LemmaObject(node) {
+        std::cout << "Deserializing Kernel" << std::endl;
         //node["PulseType"] = "FID";
         Larmor = node["Larmor"].as<Real>();
         Temperature = node["Temperature"].as<Real>();

@@ -45,26 +45,26 @@ int main(int argc, char** argv) {
 
     // TODO fix python post-processing so this is not necessary
     // Save in simplified format for easy python plotting
-    std::ofstream dout = std::ofstream(std::string("Tx")+std::string(argv[2])+std::string("Rx-")+std::string(argv[3])+std::string(".dat"));
-    dout << "# Transmitters: ";
-    for (auto lp : tx) {
-        dout << lp << "\t";
-    }
-    dout << "\n# Receivers: ";
-    for (auto lp : rx) {
-        dout << lp << "\t";
-    }
-    dout << "\n# Tolerance: " << Kern->GetTolerance() << std::endl;
-        dout << Kern->GetInterfaces().transpose() << std::endl;
-        dout << Kern->GetPulseDuration()*Kern->GetPulseCurrent().transpose() << std::endl;
-        dout << "#real\n";
-        dout << Kern->GetKernel().real() << std::endl;
-        dout << "#imag\n";
-        dout << Kern->GetKernel().imag() << std::endl;
-        dout.close();
+//     std::ofstream dout = std::ofstream(std::string("Tx")+std::string(argv[2])+std::string("Rx-")+std::string(argv[3])+std::string(".dat"));
+//     dout << "# Transmitters: ";
+//     for (auto lp : tx) {
+//         dout << lp << "\t";
+//     }
+//     dout << "\n# Receivers: ";
+//     for (auto lp : rx) {
+//         dout << lp << "\t";
+//     }
+//     dout << "\n# Tolerance: " << Kern->GetTolerance() << std::endl;
+//         dout << Kern->GetInterfaces().transpose() << std::endl;
+//         dout << Kern->GetPulseDuration()*Kern->GetPulseCurrent().transpose() << std::endl;
+//         dout << "#real\n";
+//         dout << Kern->GetKernel().real() << std::endl;
+//         dout << "#imag\n";
+//         dout << Kern->GetKernel().imag() << std::endl;
+//         dout.close();
 
     // Save YAML kernel
-    std::ofstream out = std::ofstream(std::string("Tx")+std::string(argv[2])+std::string("Rx-")+std::string(argv[3])+std::string(".yaml"));
+    std::ofstream out = std::ofstream(std::string("Tx-")+std::string(argv[2])+std::string("_Rx-")+std::string(argv[3])+std::string(".yaml"));
     out << *Kern;
     out.close();
 
