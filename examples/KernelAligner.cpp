@@ -28,5 +28,6 @@ int main(int argc, char** argv) {
         exit(EXIT_SUCCESS);
     }
     auto K0 = KernelV0::NewSP();
+
     std::cout << *K0 << std::endl;
 }
