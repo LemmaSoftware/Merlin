@@ -35,7 +35,7 @@ namespace Lemma {
     //      Method:  LayeredEarthMR
     // Description:  constructor (locked)
     //--------------------------------------------------------------------------------------
-    LayeredEarthMR::LayeredEarthMR (const ctor_key&) : LayeredEarth( ) {
+    LayeredEarthMR::LayeredEarthMR (const ctor_key&) : LayeredEarth( LayeredEarth::ctor_key() ) {
 
     }  // -----  end of method LayeredEarthMR::LayeredEarthMR  (constructor)  -----
 
