@@ -35,7 +35,7 @@ namespace Lemma {
     //      Method:  LayeredEarthMR
     // Description:  constructor (locked)
     //--------------------------------------------------------------------------------------
-    LayeredEarthMR::LayeredEarthMR (const ctor_key&) : LayeredEarth( ) {
+    LayeredEarthMR::LayeredEarthMR (const ctor_key& key) : LayeredEarth( key ) {
 
     }  // -----  end of method LayeredEarthMR::LayeredEarthMR  (constructor)  -----
 
@@ -44,7 +44,7 @@ namespace Lemma {
     //      Method:  LayeredEarthMR
     // Description:  DeSerializing constructor (locked)
     //--------------------------------------------------------------------------------------
-    LayeredEarthMR::LayeredEarthMR (const YAML::Node& node, const ctor_key&) : LayeredEarth(node) {
+    LayeredEarthMR::LayeredEarthMR (const YAML::Node& node, const ctor_key& key) : LayeredEarth(node, key) {
         Interfaces = node["Interfaces"].as<VectorXr>();
         T2StarBins = node["T2StarBins"].as<VectorXr>();
         T2StarBinEdges = node["T2StarBinEdges"].as<VectorXr>();

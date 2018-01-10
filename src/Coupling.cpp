@@ -26,7 +26,7 @@ namespace Lemma {
     // ====================  FRIEND METHODS  =====================
 
     std::ostream &operator << (std::ostream &stream, const Coupling &ob) {
-        stream << ob.Serialize()  << "\n---\n"; // End of doc ---
+        stream << ob.Serialize()  << "\n"; // End of doc ---
         return stream;
     }
 
@@ -37,7 +37,7 @@ namespace Lemma {
     //      Method:  Coupling
     // Description:  constructor (locked)
     //--------------------------------------------------------------------------------------
-    Coupling::Coupling (const ctor_key&) : LemmaObject( ) {
+    Coupling::Coupling (const ctor_key& key) : LemmaObject( key ) {
 
     }  // -----  end of method Coupling::Coupling  (constructor)  -----
 
@@ -46,7 +46,7 @@ namespace Lemma {
     //      Method:  Coupling
     // Description:  DeSerializing constructor (locked)
     //--------------------------------------------------------------------------------------
-    Coupling::Coupling (const YAML::Node& node, const ctor_key&) : LemmaObject(node) {
+    Coupling::Coupling (const YAML::Node& node, const ctor_key& key) : LemmaObject(node, key) {
 
     }  // -----  end of method Coupling::Coupling  (constructor)  -----
 

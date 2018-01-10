@@ -25,7 +25,7 @@ namespace Lemma {
     // ====================  FRIEND METHODS  =====================
 
     std::ostream &operator << (std::ostream &stream, const DataFID &ob) {
-        stream <<"%YAML 1.2\n---\n" << ob.Serialize()  << "\n"; // End of doc ---
+        stream << ob.Serialize()  << "\n";
         return stream;
     }
 
@@ -36,7 +36,7 @@ namespace Lemma {
     //      Method:  DataFID
     // Description:  constructor (locked)
     //--------------------------------------------------------------------------------------
-    DataFID::DataFID (const ctor_key&) : MerlinObject( ) {
+    DataFID::DataFID (const ctor_key& key) : MerlinObject( key ) {
 
     }  // -----  end of method DataFID::DataFID  (constructor)  -----
 
@@ -45,7 +45,7 @@ namespace Lemma {
     //      Method:  DataFID
     // Description:  DeSerializing constructor (locked)
     //--------------------------------------------------------------------------------------
-    DataFID::DataFID (const YAML::Node& node, const ctor_key&) : MerlinObject(node) {
+    DataFID::DataFID (const YAML::Node& node, const ctor_key& key) : MerlinObject(node, key) {
 
     }  // -----  end of method DataFID::DataFID  (constructor)  -----
 

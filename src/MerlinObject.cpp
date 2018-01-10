@@ -25,7 +25,7 @@ namespace Lemma {
     // ====================  FRIEND METHODS  =====================
 
     std::ostream &operator << (std::ostream &stream, const MerlinObject &ob) {
-        stream << ob.Serialize()  << "\n---\n"; // End of doc ---
+        stream << ob.Serialize()  << "\n"; // End of doc ---
         return stream;
     }
 
@@ -36,7 +36,7 @@ namespace Lemma {
     //      Method:  MerlinObject
     // Description:  constructor (locked)
     //--------------------------------------------------------------------------------------
-    MerlinObject::MerlinObject ( ) : LemmaObject( ) {
+    MerlinObject::MerlinObject ( const ctor_key& key ) : LemmaObject( key ) {
 
     }  // -----  end of method MerlinObject::MerlinObject  (constructor)  -----
 
@@ -45,7 +45,7 @@ namespace Lemma {
     //      Method:  MerlinObject
     // Description:  DeSerializing constructor (locked)
     //--------------------------------------------------------------------------------------
-    MerlinObject::MerlinObject (const YAML::Node& node ) : LemmaObject(node) {
+    MerlinObject::MerlinObject (const YAML::Node& node, const ctor_key& key ) : LemmaObject(node, key) {
 
     }  // -----  end of method MerlinObject::MerlinObject  (constructor)  -----
 
@@ -55,7 +55,7 @@ namespace Lemma {
     // Description:  public constructor returing a shared_ptr
     //--------------------------------------------------------------------------------------
     std::shared_ptr< MerlinObject >  MerlinObject::NewSP() {
-        return std::make_shared< MerlinObject >( );
+        return std::make_shared< MerlinObject >( ctor_key() );
     }
 
     //--------------------------------------------------------------------------------------
@@ -87,7 +87,7 @@ namespace Lemma {
         if (node.Tag() !=  "MerlinObject" ) {
             throw  DeSerializeTypeMismatch( "MerlinObject", node.Tag());
         }
-        return std::make_shared< MerlinObject > ( node );
+        return std::make_shared< MerlinObject > ( node, ctor_key() );
     }		// -----  end of method MerlinObject::DeSerialize  -----
 
 } // ----  end of namespace Lemma  ----

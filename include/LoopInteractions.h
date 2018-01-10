@@ -52,13 +52,6 @@ namespace Lemma {
             return stream;
         }
 
-        protected:
-        /*
-         *  This key is used to lock the constructor. It is protected so that inhereted
-         *  classes also have the key to contruct their base class.
-         */
-        struct ctor_key {};
-
         public:
 
         // ====================  LIFECYCLE     =======================
@@ -71,7 +64,7 @@ namespace Lemma {
          *       in c++-17, this curiosity may be resolved.
          * @see LoopInteractions::NewSP
          */
-        explicit LoopInteractions ( const ctor_key& ) : LemmaObject () { }
+        explicit LoopInteractions ( const ctor_key& key ) : LemmaObject (key) { }
 
         /**
          * DeSerializing constructor.
@@ -81,7 +74,7 @@ namespace Lemma {
          *       in c++-17, this curiosity may be resolved.
          * @see LoopInteractions::DeSerialize
          */
-        LoopInteractions ( const YAML::Node& node, const ctor_key& ) : LemmaObject(node) { }
+        LoopInteractions ( const YAML::Node& node, const ctor_key& key) : LemmaObject(node, key) { }
 
         /**
          * Default destructor.

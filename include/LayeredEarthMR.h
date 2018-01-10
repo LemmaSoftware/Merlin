@@ -37,13 +37,6 @@ namespace Lemma {
 
         friend std::ostream &operator<<(std::ostream &stream, const LayeredEarthMR &ob);
 
-        protected:
-        /*
-         *  This key is used to lock the constructor. It is protected so that inhereted
-         *  classes also have the key to contruct their base class.
-         */
-        struct ctor_key {};
-
         public:
 
         // ====================  LIFECYCLE     =======================

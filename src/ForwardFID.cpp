@@ -24,7 +24,7 @@ namespace Lemma {
     // ====================  FRIEND METHODS  =====================
 
     std::ostream &operator << (std::ostream &stream, const ForwardFID &ob) {
-        stream << ob.Serialize()  << "\n---\n"; // End of doc ---
+        stream << ob.Serialize()  << "\n";
         return stream;
     }
 
@@ -35,7 +35,7 @@ namespace Lemma {
     //      Method:  ForwardFID
     // Description:  constructor (locked)
     //--------------------------------------------------------------------------------------
-    ForwardFID::ForwardFID (const ctor_key&) : MerlinObject( ) {
+    ForwardFID::ForwardFID (const ctor_key& key) : MerlinObject( key ) {
 
     }  // -----  end of method ForwardFID::ForwardFID  (constructor)  -----
 
@@ -44,7 +44,7 @@ namespace Lemma {
     //      Method:  ForwardFID
     // Description:  DeSerializing constructor (locked)
     //--------------------------------------------------------------------------------------
-    ForwardFID::ForwardFID (const YAML::Node& node, const ctor_key&) : MerlinObject(node) {
+    ForwardFID::ForwardFID (const YAML::Node& node, const ctor_key& key) : MerlinObject(node, key) {
 
     }  // -----  end of method ForwardFID::ForwardFID  (constructor)  -----
 

@@ -26,7 +26,7 @@ namespace Lemma {
     // ====================  FRIEND METHODS  =====================
 
     std::ostream &operator << (std::ostream &stream, const KernelV0 &ob) {
-        stream << ob.Serialize()  << "\n---\n"; // End of doc ---
+        stream << ob.Serialize()  << "\n"; // End of doc ---
         return stream;
     }
 
@@ -37,7 +37,7 @@ namespace Lemma {
     //      Method:  KernelV0
     // Description:  constructor (locked)
     //--------------------------------------------------------------------------------------
-    KernelV0::KernelV0 (const ctor_key&) : LemmaObject( ) {
+    KernelV0::KernelV0 (const ctor_key& key) : LemmaObject( key ) {
 
     }  // -----  end of method KernelV0::KernelV0  (constructor)  -----
 
@@ -46,8 +46,7 @@ namespace Lemma {
     //      Method:  KernelV0
     // Description:  DeSerializing constructor (locked)
     //--------------------------------------------------------------------------------------
-    KernelV0::KernelV0 (const YAML::Node& node, const ctor_key&) : LemmaObject(node) {
-        std::cout << "Deserializing Kernel" << std::endl;
+    KernelV0::KernelV0 (const YAML::Node& node, const ctor_key& key) : LemmaObject(node, key) {
         //node["PulseType"] = "FID";
         Larmor = node["Larmor"].as<Real>();
         Temperature = node["Temperature"].as<Real>();

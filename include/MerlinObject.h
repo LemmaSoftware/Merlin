@@ -37,12 +37,6 @@ namespace Lemma {
 
         friend std::ostream &operator<<(std::ostream &stream, const MerlinObject &ob);
 
-        protected:
-        /*
-         *  This key is used to lock the constructor. It is protected so that inhereted
-         *  classes also have the key to contruct their base class.
-         */
-
         public:
 
         // ====================  LIFECYCLE     =======================
@@ -55,7 +49,7 @@ namespace Lemma {
          *       in c++-17, this curiosity may be resolved.
          * @see MerlinObject::NewSP
          */
-        explicit MerlinObject ( );
+        explicit MerlinObject ( const ctor_key& key );
 
         /**
          * DeSerializing constructor.
@@ -65,7 +59,7 @@ namespace Lemma {
          *       in c++-17, this curiosity may be resolved.
          * @see MerlinObject::DeSerialize
          */
-        MerlinObject ( const YAML::Node& node );
+        MerlinObject ( const YAML::Node& node, const ctor_key& key );
 
         /**
          * Default destructor.
