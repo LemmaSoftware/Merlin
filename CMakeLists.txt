@@ -25,13 +25,12 @@ set_target_properties(merlin PROPERTIES
 target_link_libraries(merlin "lemmacore" "fdem1d" )
 
 # Linking
-if ( MERLIN_VTK6_SUPPORT OR MERLIN_VTK7_SUPPORT ) 
+if ( LEMMA_VTK6_SUPPORT OR LEMMA_VTK7_SUPPORT ) 
 	target_link_libraries(merlin ${VTK_LIBRARIES})
-#	target_link_libraries(lemmacore "matplot")
 endif()
 
 # Testing
-if (MERLIN_ENABLE_TESTING)
+if (LEMMA_ENABLE_TESTING)
 	add_subdirectory(testing)
 endif()
 
