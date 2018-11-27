@@ -32,6 +32,8 @@ endif()
 
 INSTALL_TARGETS( "/share/Merlin/"
 	KernelV0
+	KernelV0-2
+	KernelAligner
 	Coupling
 	Interference
 )

@@ -41,8 +41,8 @@ namespace Lemma {
 
     /**
      * \ingroup Merlin
-     * \brief
-     * \details
+     * \brief   Class for calculating the interactions between wire loops.
+     * \details The calculations are done in the frequency domain.
      */
     template< INTERACTION Type  >
     class LoopInteractions : public LemmaObject {

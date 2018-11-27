@@ -24,7 +24,10 @@ std::shared_ptr<PolygonalWireAntenna> CircularLoop ( int nd, Real radius, Real O
 
 int main(int argc, char** argv) {
 
-    Real offset = atof(argv[1]);
+    if (argc < 6) {             // 1          2           3                    4                5
+        std::cout << "./KernelV0 TxCoil.yaml RxCoil.yaml  EMEarthModel.yaml    AkvoDataSet.yaml Output.yaml \n";
+        exit(EXIT_SUCCESS);
+    }
 
 	auto earth = LayeredEarthEM::NewSP();
 		earth->SetNumberOfLayers(3);
@@ -34,10 +37,19 @@ int main(int argc, char** argv) {
         // From NOAA, Laramie WY, June 9 2016, aligned with mag. north
         earth->SetMagneticFieldIncDecMag( 67, 9, 52750, NANOTESLA );
 
-    // Transmitter loops
-    auto Tx1 = CircularLoop(21, 15, 100, 100);
-    auto Tx2 = CircularLoop(21, 15, 100, 100 + offset); // 100, 115, 124.8, 130
-    //auto Tx1 = CircularLoop(60, 15, 0, 0); // was 60
+        auto Tx1 = PolygonalWireAntenna::DeSerialize( YAML::LoadFile(argv[1]) );
+        auto Tx2 = PolygonalWireAntenna::DeSerialize( YAML::LoadFile(argv[2]) );
+
+        //////////////////////////////////////               _
+        Tx1->SetCurrent(1.);                //               |
+        Tx1->SetNumberOfTurns(1);           //    Set these from Akvo input!
+        Tx1->SetNumberOfFrequencies(1);     //               |
+        Tx1->SetFrequency(0,2246);          //               |
+        Tx2->SetCurrent(1.);                //               |
+        Tx2->SetNumberOfTurns(1);           //           \   |   /
+        Tx2->SetNumberOfFrequencies(1);     //            \  |  /
+        Tx2->SetFrequency(0,2246);          //             \ | /
+        //////////////////////////////////////               _
 
     auto Kern = KernelV0::NewSP();
         Kern->PushCoil( "Coil 1", Tx1 );
@@ -46,24 +58,15 @@ int main(int argc, char** argv) {
 
         Kern->SetIntegrationSize( (Vector3r() << 200,200,200).finished() );
         Kern->SetIntegrationOrigin( (Vector3r() << 0,0,0).finished() );
-        Kern->SetTolerance( 1e-12 ); // 1e-12
+        Kern->SetTolerance( 1e-9 ); // 1e-12
 
-        Kern->AlignWithAkvoDataset( YAML::LoadFile(argv[2]) );
+        auto AkvoDataNode = YAML::LoadFile(argv[4]);
+        Kern->AlignWithAkvoDataset( AkvoDataNode );
 
-        Kern->SetPulseDuration(0.020);
-        VectorXr I(36);
+        // These should to into AlignWithAkvoDataSet...
+        Kern->SetPulseDuration( AkvoDataNode["pulseLength"][0].as<Real>() );
+        Kern->SetPulseCurrent( AkvoDataNode["Pulses"]["Pulse 1"]["current"].as<VectorXr>() ); // nbins, low, high
 
-        // off from VC by 1.075926340216996
-        // Pulses from Wyoming Red Buttes exp 0
-        I << 397.4208916184016, 352.364477036168, 313.0112765842783, 278.37896394065376, 247.81424224324982,
-             220.77925043190442, 196.76493264105017, 175.31662279234038, 156.0044839325404, 138.73983004230124,
-             123.42064612625474, 109.82713394836259, 97.76534468972267, 87.06061858367781, 77.56000002944572, 69.1280780096311,
-             61.64250263640252, 54.99473044877554, 49.091182970515476, 43.84634004556388, 39.184136917167976, 35.03619319797924,
-             31.347205894128976, 28.06346770557137, 25.139117042424758, 22.53420773366429, 20.214205433283347,
-             18.144318026099942, 16.299965972298878, 14.652633628829891, 13.184271405688083, 11.870540177313893,
-             10.697057141915716, 9.64778948429609, 8.709338689612677, 7.871268012862094;
-        //Kern->SetPulseCurrent( VectorXr::LinSpaced( 1, 10, 200 )  ); // nbins, low, high
-        Kern->SetPulseCurrent( I ); // nbins, low, high
 
         //VectorXr interfaces = VectorXr::LinSpaced( 41, .5, 45.5 ); // nlay, low, high
         VectorXr interfaces = VectorXr::LinSpaced( 51, .5, 45.5 ); // nlay, low, high
@@ -76,10 +79,12 @@ int main(int argc, char** argv) {
 
     // We could, I suppose, take the earth model in here? For non-linear that
     // may be more natural to work with?
-    std::vector<std::string> tx = {std::string("Coil 1"), std::string("Coil 2") };
+    //std::vector<std::string> tx = {std::string("Coil 1"), std::string("Coil 2") };
+    std::vector<std::string> tx = {std::string("Coil 1")};  //, std::string("Coil 2") };
     std::vector<std::string> rx = {std::string("Coil 2")};
     Kern->CalculateK0( tx, rx, false );
 
+/*
     std::ofstream dout = std::ofstream(std::string("k-Tx2coil-Rx1coil-offset-")+ std::string(argv[1])+ std::string(".dat"));
     //std::ofstream dout = std::ofstream(std::string("k-coincident.dat"));
         dout << interfaces.transpose() << std::endl;
@@ -89,8 +94,10 @@ int main(int argc, char** argv) {
         dout << "#imag\n";
         dout << Kern->GetKernel().imag() << std::endl;
         dout.close();
+*/
 
-    std::ofstream out = std::ofstream(std::string("k-Tx2coil-Rx1coil-offset-")+std::string(argv[1])+std::string(".yaml"));
+    //std::ofstream out = std::ofstream(std::string("k-Tx2coil-Rx1coil-offset-")+std::string(argv[1])+std::string(".yaml"));
+    std::ofstream out = std::ofstream(std::string(argv[5]));
     //std::ofstream out = std::ofstream(std::string("k-coincident.yaml"));
     out << *Kern;
     out.close();

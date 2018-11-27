@@ -30,6 +30,7 @@ int main(int argc, char** argv) {
 
     std::cout << "Using kernel paramaters: " << argv[1] << std::endl;
     auto Kern = KernelV0::DeSerialize( YAML::LoadFile(argv[1]) );
+    std::cout << "Kernel DeSerialized successful" << std::endl;
 
     std::vector<std::string> tx = {std::string(argv[2])};
     std::vector<std::string> rx = {std::string(argv[3])};

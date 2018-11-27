@@ -17,7 +17,7 @@
  * @copyright Copyright (c) 2008, Colorado School of Mines
  */
 
-
+#include "MerlinConfig.h"
 #include "KernelV0.h"
 #include "FieldPoints.h"
 
@@ -37,7 +37,7 @@ namespace Lemma {
     //      Method:  KernelV0
     // Description:  constructor (locked)
     //--------------------------------------------------------------------------------------
-    KernelV0::KernelV0 (const ctor_key& key) : LemmaObject( key ) {
+    KernelV0::KernelV0 (const ctor_key& key) : MerlinObject( key ) {
 
     }  // -----  end of method KernelV0::KernelV0  (constructor)  -----
 
@@ -46,7 +46,8 @@ namespace Lemma {
     //      Method:  KernelV0
     // Description:  DeSerializing constructor (locked)
     //--------------------------------------------------------------------------------------
-    KernelV0::KernelV0 (const YAML::Node& node, const ctor_key& key) : LemmaObject(node, key) {
+    KernelV0::KernelV0 (const YAML::Node& node, const ctor_key& key) : MerlinObject(node, key) {
+
         //node["PulseType"] = "FID";
         Larmor = node["Larmor"].as<Real>();
         Temperature = node["Temperature"].as<Real>();
@@ -116,7 +117,8 @@ namespace Lemma {
     //      Method:  Serialize
     //--------------------------------------------------------------------------------------
     YAML::Node  KernelV0::Serialize (  ) const {
-        YAML::Node node = LemmaObject::Serialize();
+
+        YAML::Node node = MerlinObject::Serialize();
         node.SetTag( GetName() );
 
         // Coils Transmitters & Receivers
@@ -173,11 +175,13 @@ namespace Lemma {
             std::cout << node["processed"] << std::endl;
         }
         if (node["pulseType"].as<std::string>() == "FID") {
+            std::cout << "FID pulse detected" << std::endl;
             PulseI  = node["Pulses"]["Pulse 1"]["current"].as<VectorXr>();
             this->SetPulseDuration( node["pulseLength"][0].as<double>() );
         } else {
             std::cerr << "Pulse Type " << node["PulseType"] << "is not supported\n";
         }
+        std::cout << "Finished with Akvo file read" << std::endl;
     }
 
     //--------------------------------------------------------------------------------------

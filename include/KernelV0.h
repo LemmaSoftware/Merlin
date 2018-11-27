@@ -20,7 +20,7 @@
 #define  KERNELV0_INC
 
 #pragma once
-#include "LemmaObject.h"
+#include "MerlinObject.h"
 #include "LayeredEarthEM.h"
 #include "PolygonalWireAntenna.h"
 #include "EMEarth1D.h"
@@ -58,7 +58,7 @@ namespace Lemma {
      * \details This class calculates the imaging kernel for a free induction decay
      *          pulse. The methodology follows from Weichman et al., 2000.
      */
-    class KernelV0 : public LemmaObject {
+    class KernelV0 : public MerlinObject {
 
         friend std::ostream &operator<<(std::ostream &stream, const KernelV0 &ob);
 
