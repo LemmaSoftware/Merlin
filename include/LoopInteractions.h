@@ -26,7 +26,7 @@
 #include "EMEarth1D.h"
 #include "FieldPoints.h"
 
-#ifdef LEMMAUSEVTK
+#ifdef LEMMAUSEVTK6
 #include "vtkHyperOctree.h"
 #include "vtkHyperOctreeCursor.h"
 #include "vtkXMLHyperOctreeWriter.h"
@@ -232,7 +232,7 @@ namespace Lemma {
         void EvaluateKids(  const Vector3r& size, const int& level, const Vector3r& cpos,
                             const Complex& parentVal );
 
-        #ifdef LEMMAUSEVTK
+        #ifdef LEMMAUSEVTK6
         /**
          *  Same functionality as @see EvaluateKids, but includes generation of a VTK
          *  HyperOctree, which is useful for visualization.
@@ -358,7 +358,7 @@ namespace Lemma {
         if (!vtkOutput) {
             EvaluateKids( Size, 0, cpos, Complex(100.));
         } else {
-        #ifdef LEMMAUSEVTK
+        #ifdef LEMMAUSEVTK6
             vtkHyperOctree* oct = vtkHyperOctree::New();
                 oct->SetDimension(3);
                 oct->SetOrigin( Origin(0), Origin(1), Origin(2) );
@@ -521,7 +521,7 @@ namespace Lemma {
         return;     // is leaf
     }
 
-    #ifdef LEMMAUSEVTK
+    #ifdef LEMMAUSEVTK6
     //--------------------------------------------------------------------------------------
     //       Class:  LoopInteractions
     //      Method:  EvaluateKids2 -- same as Evaluate Kids, but include VTK octree generation

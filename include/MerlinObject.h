@@ -119,6 +119,7 @@ namespace Lemma {
         static constexpr auto CName = "MerlinObject";
 
     }; // -----  end of class  MerlinObject  -----
+
 }  // -----  end of namespace Lemma ----
 
 /* vim: set tabstop=4 expandtab: */

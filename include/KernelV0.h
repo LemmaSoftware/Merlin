@@ -26,9 +26,13 @@
 #include "EMEarth1D.h"
 
 #ifdef LEMMAUSEVTK
-#include "vtkHyperOctree.h"
-#include "vtkHyperOctreeCursor.h"
-#include "vtkXMLHyperOctreeWriter.h"
+//#include "vtkHyperOctree.h"
+//#include "vtkHyperOctreeCursor.h"
+//#include "vtkXMLHyperOctreeWriter.h"
+#include "vtkHyperTreeGrid.h"
+#include "vtkHyperTreeCursor.h"
+#include "vtkXMLHyperTreeGridWriter.h"
+//#include "vtkHyperTreeGridLevelEntry.h" VTK 9
 #include "vtkDoubleArray.h"
 #endif
 
@@ -299,9 +303,9 @@ namespace Lemma {
          *  HyperOctree, which is useful for visualization.
          */
         void EvaluateKids2(  const Vector3r& size, const int& level, const Vector3r& cpos,
-                            const VectorXcr& parentVal, vtkHyperOctree* octree, vtkHyperOctreeCursor* curse );
+                            const VectorXcr& parentVal, vtkHyperTreeGrid* octree, vtkHyperTreeCursor* curse );
 
-        void GetPosition( vtkHyperOctreeCursor* Cursor, Real* p );
+        void GetPosition( vtkHyperTreeCursor* Cursor, Real* p );
         #endif
 
         // ====================  DATA MEMBERS  =========================

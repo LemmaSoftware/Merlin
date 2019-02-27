@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
     //std::vector<std::string> tx = {std::string("Coil 1"), std::string("Coil 2") };
     std::vector<std::string> tx = {std::string("Coil 1")};  //, std::string("Coil 2") };
     std::vector<std::string> rx = {std::string("Coil 2")};
-    Kern->CalculateK0( tx, rx, false );
+    Kern->CalculateK0( tx, rx, true );
 
 /*
     std::ofstream dout = std::ofstream(std::string("k-Tx2coil-Rx1coil-offset-")+ std::string(argv[1])+ std::string(".dat"));

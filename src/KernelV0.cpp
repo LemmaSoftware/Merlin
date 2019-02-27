@@ -252,11 +252,37 @@ namespace Lemma {
             EvaluateKids( Size, 0, cpos, VectorXcr::Ones(PulseI.size()) );
         } else {
         #ifdef LEMMAUSEVTK
-            vtkHyperOctree* oct = vtkHyperOctree::New();
+            vtkHyperTreeGrid* oct = vtkHyperTreeGrid::New();
+
                 oct->SetDimension(3);
-                oct->SetOrigin( Origin(0), Origin(1), Origin(2) );
-                oct->SetSize( Size(0), Size(1), Size(2) );
-            vtkHyperOctreeCursor* curse = oct->NewCellCursor();
+                vtkNew<vtkDoubleArray> xcoords;
+                    xcoords->SetNumberOfComponents(1);
+                    xcoords->SetNumberOfTuples(2);
+                    xcoords->SetTuple1( 0, Origin(0) );
+                    xcoords->SetTuple1( 1, Origin(0) + Size(0) );
+                    xcoords->SetName("northing (m)");
+                    oct->SetXCoordinates(xcoords);
+
+                vtkNew<vtkDoubleArray> ycoords;
+                    ycoords->SetNumberOfComponents(1);
+                    ycoords->SetNumberOfTuples(2);
+                    ycoords->SetTuple1( 0, Origin(1) );
+                    ycoords->SetTuple1( 1, Origin(1) + Size(1) );
+                    ycoords->SetName("easting (m)");
+                    oct->SetYCoordinates(ycoords);
+
+                vtkNew<vtkDoubleArray> zcoords;
+                    zcoords->SetNumberOfComponents(1);
+                    zcoords->SetNumberOfTuples(2);
+                    zcoords->SetTuple1( 0, Origin(2) );
+                    zcoords->SetTuple1( 1, Origin(2) + Size(2) );
+                    zcoords->SetName("depth (m)");
+                    oct->SetZCoordinates(zcoords);
+
+            //vtkHyperTreeGridLevelEntry* curse2 =  vtkHyperTreeGridLevelEntry::New(); // VTK 9
+            //std::cout << *oct << std::endl;
+            // TODO, check the index in NewCursor maybe points to which cell in the Rectilinear Grid?
+            vtkHyperTreeCursor* curse = oct->NewCursor(0, true); // true creates the cursor
                 curse->ToRoot();
             EvaluateKids2( Size, 0, cpos, VectorXcr::Ones(PulseI.size()), oct, curse );
 
@@ -322,26 +348,29 @@ namespace Lemma {
             for (auto leaf : LeafDictIdx) {
                 kerr->InsertTuple1( leaf.first, leaf.second );
             }
-
-            auto kri = oct->GetLeafData()->AddArray(kr);
-            auto kii = oct->GetLeafData()->AddArray(ki);
-            auto kmi = oct->GetLeafData()->AddArray(km);
-            auto kidi = oct->GetLeafData()->AddArray(kid);
-            auto keri = oct->GetLeafData()->AddArray(kerr);
-            auto khtr = oct->GetLeafData()->AddArray(htr);
-            auto khti = oct->GetLeafData()->AddArray(hti);
-            auto khrr = oct->GetLeafData()->AddArray(hrr);
-            auto khri = oct->GetLeafData()->AddArray(hri);
-
-            auto write = vtkXMLHyperOctreeWriter::New();
-                //write.SetDataModeToAscii()
-                write->SetInputData(oct);
+/* TODO fix
+            auto kri = oct->GetCellData()->AddArray(kr);
+            auto kii = oct->GetCellData()->AddArray(ki);
+            auto kmi = oct->GetCellData()->AddArray(km);
+            auto kidi = oct->GetCellData()->AddArray(kid);
+            auto keri = oct->GetCellData()->AddArray(kerr);
+            auto khtr = oct->GetCellData()->AddArray(htr);
+            auto khti = oct->GetCellData()->AddArray(hti);
+            auto khrr = oct->GetCellData()->AddArray(hrr);
+            auto khri = oct->GetCellData()->AddArray(hri);
+*/
+            std::cout << "Writing file...Number of leaves: " << oct->GetNumberOfLeaves() << std::endl;
+            auto write = vtkXMLHyperTreeGridWriter::New();
                 std::string fname = std::string("octree-") + to_string(ilay)
-                                  + std::string("-") + to_string(iq) + std::string(".vto");
+                                  + std::string("-") + to_string(iq) + std::string(".htg");
                 write->SetFileName(fname.c_str());
+                write->SetInputData(oct);
+                write->SetDataModeToBinary();
+                //write.SetDataModeToAscii()
+                //write->Update();
                 write->Write();
                 write->Delete();
-
+/*
             oct->GetLeafData()->RemoveArray( kri );
             oct->GetLeafData()->RemoveArray( kii );
             oct->GetLeafData()->RemoveArray( kmi );
@@ -361,7 +390,7 @@ namespace Lemma {
             hti->Delete();
             hrr->Delete();
             hri->Delete();
-
+*/
             }
             curse->Delete();
             oct->Delete();
@@ -568,7 +597,7 @@ namespace Lemma {
     //      Method:  EvaluateKids2 -- same as Evaluate Kids, but include VTK octree generation
     //--------------------------------------------------------------------------------------
     void KernelV0::EvaluateKids2( const Vector3r& size, const int& level, const Vector3r& cpos,
-        const VectorXcr& parentVal, vtkHyperOctree* oct, vtkHyperOctreeCursor* curse) {
+        const VectorXcr& parentVal, vtkHyperTreeGrid* oct, vtkHyperTreeCursor* curse) {
 
         std::cout << "\r" << (int)(1e2*VOLSUM/(Size[0]*Size[1]*Size[2])) << "\t" << nleaves;
         //std::cout.flush();
@@ -627,7 +656,9 @@ namespace Lemma {
         VectorXcr ksum = kvals.colwise().sum();     // Kernel sum
         // Evaluate whether or not furthur splitting is needed
         if ( (((ksum - parentVal).array().abs() > tol).any() && level<maxLevel) || level < minLevel ) {
-            oct->SubdivideLeaf(curse);
+            // TODO Fix, 0 after curse is vtkIdType?
+            oct->SubdivideLeaf(curse, 0);
+            //std::cout << "Number of leaves: " << oct->GetNumberOfLeaves() << std::endl;
             for (int ichild=0; ichild<8; ++ichild) {
                 curse->ToChild(ichild);
                 Vector3r cp = pos; // Eigen complains about combining these
@@ -656,13 +687,19 @@ namespace Lemma {
         /* Alternatively, subdivide the VTK octree here and stuff the children to make better
          * visuals, but also 8x the storage...
          */
-        oct->SubdivideLeaf(curse);
+        // TODO Fix, 0 after curse is vtkIdType?
+        oct->SubdivideLeaf(curse, 0);
         for (int ichild=0; ichild<8; ++ichild) {
             curse->ToChild(ichild);
-            LeafDict[curse->GetLeafId()] = ksum/(8.*vol);
-            LeafHt[curse->GetLeafId()] = Ht.col(ichild);
-            LeafHr[curse->GetLeafId()] = Hr.col(ichild);
-            LeafDictIdx[curse->GetLeafId()] = nleaves;
+            // TODO fix, GetLeafId to GetLevel??
+            //LeafDict[curse->GetLeafId()] = ksum/(8.*vol);
+            //LeafHt[curse->GetLeafId()] = Ht.col(ichild);
+            //LeafHr[curse->GetLeafId()] = Hr.col(ichild);
+            //LeafDictIdx[curse->GetLeafId()] = nleaves;
+            LeafDict[curse->GetLevel()] = ksum/(8.*vol);
+            LeafHt[curse->GetLevel()] = Ht.col(ichild);
+            LeafHr[curse->GetLevel()] = Hr.col(ichild);
+            LeafDictIdx[curse->GetLevel()] = nleaves;
             curse->ToParent();
         }
 
@@ -676,12 +713,15 @@ namespace Lemma {
     //       Class:  KernelV0
     //      Method:  GetPosition
     //--------------------------------------------------------------------------------------
-    void KernelV0::GetPosition( vtkHyperOctreeCursor* Cursor, Real* p ) {
+    void KernelV0::GetPosition( vtkHyperTreeCursor* Cursor, Real* p ) {
+        // TODO fix
+        /*
         Real ratio=1.0/(1<<(Cursor->GetCurrentLevel()));
         //step  = ((Size).array() / std::pow(2.,Cursor->GetCurrentLevel()));
         p[0]=(Cursor->GetIndex(0)+.5)*ratio*this->Size[0]+this->Origin[0] ;//+ .5*step[0];
         p[1]=(Cursor->GetIndex(1)+.5)*ratio*this->Size[1]+this->Origin[1] ;//+ .5*step[1];
         p[2]=(Cursor->GetIndex(2)+.5)*ratio*this->Size[2]+this->Origin[2] ;//+ .5*step[2];
+        */
     }
 
     #endif

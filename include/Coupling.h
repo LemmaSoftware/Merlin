@@ -26,9 +26,12 @@
 #include "EMEarth1D.h"
 
 #ifdef LEMMAUSEVTK
-#include "vtkHyperOctree.h"
-#include "vtkHyperOctreeCursor.h"
-#include "vtkXMLHyperOctreeWriter.h"
+//#include "vtkHyperOctree.h"
+//#include "vtkHyperOctreeCursor.h"
+//#include "vtkXMLHyperOctreeWriter.h"
+#include "vtkHyperTreeGrid.h"
+#include "vtkHyperTreeCursor.h"
+#include "vtkXMLHyperTreeGridWriter.h"
 #include "vtkDoubleArray.h"
 #endif
 
@@ -200,7 +203,7 @@ namespace Lemma {
         void EvaluateKids(  const Vector3r& size, const int& level, const Vector3r& cpos,
                             const Complex& parentVal );
 
-        #ifdef LEMMAUSEVTK
+        #ifdef LEMMAUSEVTK6
         /**
          *  Same functionality as @see EvaluateKids, but includes generation of a VTK
          *  HyperOctree, which is useful for visualization.
