@@ -25,7 +25,7 @@ std::shared_ptr<PolygonalWireAntenna> CircularLoop ( int nd, Real radius, Real O
 int main(int argc, char** argv) {
 
     if (argc < 6) {             // 1          2           3                    4                5
-        std::cout << "./KernelV0 TxCoil.yaml RxCoil.yaml  EMEarthModel.yaml    AkvoDataSet.yaml Output.yaml \n";
+        std::cout << "./KernelV0 TxCoil.yaml RxCoil.yaml  EMEarthModel.yaml  AkvoDataSet.yaml Output.yaml \n";
         exit(EXIT_SUCCESS);
     }
 
@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
 
         Kern->SetIntegrationSize( (Vector3r() << 200,200,200).finished() );
         Kern->SetIntegrationOrigin( (Vector3r() << 0,0,0).finished() );
-        Kern->SetTolerance( 1e-9 ); // 1e-12
+        Kern->SetTolerance( 1e-11 ); // 1e-12
 
         auto AkvoDataNode = YAML::LoadFile(argv[4]);
         Kern->AlignWithAkvoDataset( AkvoDataNode );
