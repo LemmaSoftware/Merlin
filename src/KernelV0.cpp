@@ -49,6 +49,8 @@ namespace Lemma {
     //--------------------------------------------------------------------------------------
     KernelV0::KernelV0 (const YAML::Node& node, const ctor_key& key) : MerlinObject(node, key) {
 
+        std::cout << "DESERIALIZING" << std::endl;
+
         //node["PulseType"] = "FID";
         Larmor = node["Larmor"].as<Real>();
         Temperature = node["Temperature"].as<Real>();
@@ -60,13 +62,15 @@ namespace Lemma {
         Origin = node["IntegrationOrigin"].as<Vector3r>();
 
         if (node["AlignWithAkvoData"]) {
+            std::cout << "About to align" << std::endl;
             // Match pulse info with dataset
-            AlignWithAkvoDataset( YAML::LoadFile( node["AlignWithAkvoData"].as<std::string>()));
+            AlignWithAkvoDataset( YAML::LoadFile( node["AlignWithAkvoData"].as<std::string>()) );
         } else {
             // Read Pulse info direct from Kernel file
             PulseI = node["PulseI"].as<VectorXr>();
             Taup = node["Taup"].as<Real>();
         }
+        std::cout << "Aligned!!!" << std::endl;
 
         if (node["SigmaModel"]) {
             if (node["SigmaModel"].Tag() == "LayeredEarthEM") {
@@ -81,6 +85,7 @@ namespace Lemma {
                 if ( coil.second.Tag() == "PolygonalWireAntenna" ) {
                     TxRx[ coil.first.as<std::string>() ] = PolygonalWireAntenna::DeSerialize( coil.second );
                 } else {
+                    std::cout << "Reading in coil file " << std::endl;
                     TxRx[ coil.first.as<std::string>() ] =
                         PolygonalWireAntenna::DeSerialize( YAML::LoadFile(coil.second.as<std::string>()) );
                 }
@@ -191,8 +196,14 @@ namespace Lemma {
     //--------------------------------------------------------------------------------------
     void KernelV0::CalculateK0 (const std::vector< std::string>& Tx,
                                 const std::vector<std::string >& Rx, bool vtkOutput ) {
+
+        std::cout << "Calculating Kernel" << std::endl;
+        std::cout << *this << std::endl;
+
         // Set up
         Larmor = SigmaModel->GetMagneticFieldMagnitude()*GAMMA; // in rad  2246.*2.*PI;
+        std::cout << std::endl;
+        std::cout << "Calculated Larmor Frequency " << Larmor / (2.*PI)  << std::endl;
 
         // All EM calculations will share same field points
         cpoints = FieldPoints::NewSP();

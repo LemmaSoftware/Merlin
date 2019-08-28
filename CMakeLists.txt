@@ -34,6 +34,11 @@ if (LEMMA_ENABLE_TESTING)
 	add_subdirectory(testing)
 endif()
 
+# Python Bindings
+if (LEMMA_PYTHON3_BINDINGS)
+	add_subdirectory(python)
+endif()
+
 # Install
 install ( TARGETS merlin DESTINATION ${CMAKE_INSTALL_PREFIX}/lib )
 install ( FILES include/Merlin  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/Lemma ) 

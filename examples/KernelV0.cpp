@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
 
         Kern->SetIntegrationSize( (Vector3r() << 200,200,200).finished() );
         Kern->SetIntegrationOrigin( (Vector3r() << 0,0,0).finished() );
-        Kern->SetTolerance( 1e-11 ); // 1e-12
+        Kern->SetTolerance( 1e-12 ); // 1e-12
 
         auto AkvoDataNode = YAML::LoadFile(argv[4]);
         Kern->AlignWithAkvoDataset( AkvoDataNode );

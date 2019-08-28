@@ -35,8 +35,8 @@
 #include "vtkHyperTree.h"
 #include "vtkHyperTree.h"
 #include "vtkHyperTreeGrid.h"
-#include "vtkHyperTreeCursor.h"
 #include "vtkXMLHyperTreeGridWriter.h"
+#include "vtkHyperTreeCursor.h"  // not in VTK 8.90
 //#include "vtkHyperTreeGridLevelEntry.h" VTK 9
 #include "vtkDoubleArray.h"
 #endif
@@ -128,6 +128,14 @@ namespace Lemma {
          *   @see KernelV0::Serialize
          */
         static std::shared_ptr<KernelV0> DeSerialize(const YAML::Node& node);
+
+        /**
+         *   Constructs an object from a string representation of a YAML::Node. This is primarily
+         *   used in Python wrapping
+         */
+        static std::shared_ptr<KernelV0> DeSerialize( const std::string& node ) {
+            return KernelV0::DeSerialize(YAML::Load(node));
+        }
 
         // ====================  OPERATORS     =======================
 
