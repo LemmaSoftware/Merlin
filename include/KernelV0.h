@@ -152,7 +152,8 @@ namespace Lemma {
          *              requires compilation of Lemma with VTK. The VTK files can become very large.
          */
         void CalculateK0 (const std::vector< std::string >& tx, const std::vector< std::string >& rx,
-                bool vtkOutput=false );
+                bool vtkOutput );
+                //bool vtkOutput=false );
 
         /**
          *  Aligns the kernel pulse settings with an Akvo Processed dataset.

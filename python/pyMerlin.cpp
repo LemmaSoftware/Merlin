@@ -19,6 +19,8 @@
 
 #include <pybind11/pybind11.h>
 #include <pybind11/iostream.h>
+#include <pybind11/stl.h>
+#include <pybind11/complex.h>
 #include <pybind11/eigen.h>
 #include "Merlin"
 
@@ -50,7 +52,7 @@ PYBIND11_MODULE(Merlin, m) {
             .def("SetTemperature", &Lemma::KernelV0::SetTemperature, "Sets the temperature, in K")
             .def("SetTolerance", &Lemma::KernelV0::SetTolerance, "Sets the tolerance used in octree splitting")
             .def("SetPulseDuration", &Lemma::KernelV0::SetPulseDuration, "Sets the duration of the pulse")
-            .def("SetDepthLayerInteraces", &Lemma::KernelV0::SetDepthLayerInterfaces, "Sets the layer depth interfaces")
+            .def("SetDepthLayerInterfaces", &Lemma::KernelV0::SetDepthLayerInterfaces, "Sets the layer depth interfaces")
 
             // accessors
             .def("GetName", &Lemma::KernelV0::GetName, "Returns the name of the class")
