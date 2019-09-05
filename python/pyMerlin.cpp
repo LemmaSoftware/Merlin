@@ -51,8 +51,11 @@ PYBIND11_MODULE(Merlin, m) {
             .def("SetPulseCurrent", &Lemma::KernelV0::SetPulseCurrent, "Sets the current of the pulses")
             .def("SetTemperature", &Lemma::KernelV0::SetTemperature, "Sets the temperature, in K")
             .def("SetTolerance", &Lemma::KernelV0::SetTolerance, "Sets the tolerance used in octree splitting")
+            .def("SetMinLevel", &Lemma::KernelV0::SetMinLevel, "Sets the minimum leaf level used in octree splitting")
+            .def("SetMaxLevel", &Lemma::KernelV0::SetMaxLevel, "Sets the maximum leaf level used in octree splitting")
             .def("SetPulseDuration", &Lemma::KernelV0::SetPulseDuration, "Sets the duration of the pulse")
             .def("SetDepthLayerInterfaces", &Lemma::KernelV0::SetDepthLayerInterfaces, "Sets the layer depth interfaces")
+            .def("SetHankelTransformType", &Lemma::KernelV0::SetHankelTransformType, "Sets the Hankel transform type")
 
             // accessors
             .def("GetName", &Lemma::KernelV0::GetName, "Returns the name of the class")

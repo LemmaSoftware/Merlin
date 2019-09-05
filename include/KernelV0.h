@@ -212,7 +212,7 @@ namespace Lemma {
         }		// -----  end of method KernelV0::set_SigmaModel  -----
 
         /**
-         *
+         *  @param[in] size the size of the volume to be integrated
          */
         inline void SetIntegrationSize ( const Vector3r& size ) {
             Size = size;
@@ -220,7 +220,32 @@ namespace Lemma {
         }		// -----  end of method KernelV0::SetIntegrationSize  -----
 
         /**
-         *
+         * @param[in] type The type of Hankel transform that will be used.
+         */
+        inline void SetHankelTransformType ( const HANKELTRANSFORMTYPE& type ) {
+            HankelType = type;
+            return ;
+        }		// -----  end of method KernelV0::SetIntegrationOrigin  -----
+
+
+        /**
+         * @param[in] min is the minimum leaf level, defaults to 0
+         */
+        inline void SetMinLevel ( const int& min ) {
+            minLevel = min;
+            return ;
+        }		// -----  end of method KernelV0::SetMinLevel  -----
+
+        /**
+         * @param[in] max is the maximum leaf level, defaults to 12
+         */
+        inline void SetMaxLevel ( const int& max ) {
+            maxLevel = max;
+            return ;
+        }		// -----  end of method KernelV0::SetMaxLevel  -----
+
+        /**
+         *  @param[in] origin The origin location (corner) for the integration volume
          */
         inline void SetIntegrationOrigin ( const Vector3r& origin ) {
             Origin = origin;
@@ -228,7 +253,7 @@ namespace Lemma {
         }		// -----  end of method KernelV0::SetIntegrationOrigin  -----
 
         /**
-         *
+         * @param[in] Amps is the current for each pulse moment
          */
         inline void SetPulseCurrent ( const VectorXr& Amps ) {
             PulseI = Amps;
@@ -342,6 +367,8 @@ namespace Lemma {
         VectorXr                                  Interfaces;
 
         MatrixXcr                                 Kern;
+
+        HANKELTRANSFORMTYPE                       HankelType=ANDERSON801;
 
         std::shared_ptr< LayeredEarthEM >         SigmaModel = nullptr;
         std::shared_ptr< FieldPoints >            cpoints = nullptr;

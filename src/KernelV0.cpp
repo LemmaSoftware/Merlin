@@ -49,8 +49,6 @@ namespace Lemma {
     //--------------------------------------------------------------------------------------
     KernelV0::KernelV0 (const YAML::Node& node, const ctor_key& key) : MerlinObject(node, key) {
 
-        std::cout << "DESERIALIZING" << std::endl;
-
         //node["PulseType"] = "FID";
         Larmor = node["Larmor"].as<Real>();
         Temperature = node["Temperature"].as<Real>();
@@ -215,9 +213,9 @@ namespace Lemma {
                 EMEarths[tx]->AttachLayeredEarthEM(SigmaModel);
                 EMEarths[tx]->AttachFieldPoints( cpoints );
          		EMEarths[tx]->SetFieldsToCalculate(H);
-                // TODO query for method, altough with flat antennae, this is fastest
-                //EMEarths[tx]->SetHankelTransformMethod(FHTKEY201);
-                EMEarths[tx]->SetHankelTransformMethod(ANDERSON801);
+                // TODO query for method
+                //EMEarths[tx]->SetHankelTransformMethod(ANDERSON801);
+                EMEarths[tx]->SetHankelTransformMethod(HankelType);
                 EMEarths[tx]->SetTxRxMode(TX);
                 TxRx[tx]->SetCurrent(1.);
         }
@@ -230,9 +228,9 @@ namespace Lemma {
                     EMEarths[rx]->AttachLayeredEarthEM(SigmaModel);
                     EMEarths[rx]->AttachFieldPoints( cpoints );
          		    EMEarths[rx]->SetFieldsToCalculate(H);
-                    // TODO query for method, altough with flat antennae, this is fastest
-                    //EMEarths[rx]->SetHankelTransformMethod(FHTKEY201);
-                    EMEarths[rx]->SetHankelTransformMethod(ANDERSON801);
+                    // TODO query for method
+                    //EMEarths[rx]->SetHankelTransformMethod(ANDERSON801);
+                    EMEarths[rx]->SetHankelTransformMethod(HankelType);
                     EMEarths[rx]->SetTxRxMode(RX);
                     TxRx[rx]->SetCurrent(1.);
             }
@@ -240,12 +238,14 @@ namespace Lemma {
 
         std::cout << "Calculating K0 kernel\n";
         Kern = MatrixXcr::Zero( Interfaces.size()-1, PulseI.size() );
+        //for (ilay=0; ilay<Interfaces.size()-1; ++ilay) {
         for (ilay=0; ilay<Interfaces.size()-1; ++ilay) {
             std::cout << "Layer " << ilay << "\tfrom " << Interfaces(ilay) <<" to "
                       << Interfaces(ilay+1) << std::endl;
             Size(2) = Interfaces(ilay+1) - Interfaces(ilay);
             Origin(2) = Interfaces(ilay);
             IntegrateOnOctreeGrid( vtkOutput );
+            //std::cout << "Kernel row " << Kern.row(ilay);
         }
         std::cout << "\nFinished KERNEL\n";
     }
