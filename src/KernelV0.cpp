@@ -236,15 +236,24 @@ namespace Lemma {
             }
         }
 
-        std::cout << "Calculating K0 kernel\n";
+        std::cout << "Calculating K0 kernel";
         Kern = MatrixXcr::Zero( Interfaces.size()-1, PulseI.size() );
         //for (ilay=0; ilay<Interfaces.size()-1; ++ilay) {
+        std::cout.precision(3);
         for (ilay=0; ilay<Interfaces.size()-1; ++ilay) {
-            std::cout << "Layer " << ilay << "\tfrom " << Interfaces(ilay) <<" to "
-                      << Interfaces(ilay+1) << std::endl;
+            std::cout << "\n\nLayer " << ilay << "\tfrom " << Interfaces(ilay) <<" to "
+                      << Interfaces(ilay+1); // << std::endl;
             Size(2) = Interfaces(ilay+1) - Interfaces(ilay);
             Origin(2) = Interfaces(ilay);
+
+            #ifdef HAVE_BOOST_PROGRESS
+            percent_done = 0;
+            disp = new boost::progress_display( 100 );
             IntegrateOnOctreeGrid( vtkOutput );
+            delete disp;
+            #else
+            IntegrateOnOctreeGrid( vtkOutput );
+            #endif
             //std::cout << "Kernel row " << Kern.row(ilay);
         }
         std::cout << "\nFinished KERNEL\n";
@@ -427,8 +436,8 @@ namespace Lemma {
         #endif
 
         }
-        std::cout << "\nVOLSUM=" << VOLSUM << "\tActual=" <<  Size(0)*Size(1)*Size(2)
-                  << "\tDifference=" << VOLSUM - (Size(0)*Size(1)*Size(2)) <<  std::endl;
+        //std::cout << "\nVOLSUM=" << VOLSUM << "\tActual=" <<  Size(0)*Size(1)*Size(2)
+        //          << "\tDifference=" << VOLSUM - (Size(0)*Size(1)*Size(2)) <<  std::endl;
     }
 
     //--------------------------------------------------------------------------------------
@@ -546,7 +555,15 @@ namespace Lemma {
     void KernelV0::EvaluateKids( const Vector3r& size, const int& level, const Vector3r& cpos,
         const VectorXcr& parentVal ) {
 
+        #ifdef HAVE_BOOST_PROGRESS
+        int pdone =  (int)(1e2*VOLSUM/(Size[0]*Size[1]*Size[2]));
+        if (pdone > percent_done ) {
+            percent_done = pdone;
+            ++(*disp);
+        }
+        #else
         std::cout << "\r" << (int)(1e2*VOLSUM/(Size[0]*Size[1]*Size[2])) << "\t" << nleaves;
+        #endif
         //std::cout.flush();
 
         // Next level step, interested in one level below
@@ -627,8 +644,15 @@ namespace Lemma {
     void KernelV0::EvaluateKids2( const Vector3r& size, const int& level, const Vector3r& cpos,
         const VectorXcr& parentVal, vtkHyperTreeGrid* oct, vtkHyperTreeCursor* curse) {
 
+        #ifdef HAVE_BOOST_PROGRESS
+        int pdone =  (int)(1e2*VOLSUM/(Size[0]*Size[1]*Size[2]));
+        if (pdone > percent_done ) {
+            percent_done = pdone;
+            ++(*disp);
+        }
+        #else
         std::cout << "\r" << (int)(1e2*VOLSUM/(Size[0]*Size[1]*Size[2])) << "\t" << nleaves;
-        //std::cout.flush();
+        #endif
 
         // Next level step, interested in one level below
         // bitshift requires one extra, faster than, and equivalent to std::pow(2, level+1)

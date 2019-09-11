@@ -384,6 +384,11 @@ namespace Lemma {
         std::map< int, Real >                     LeafDictErr;   // error value
         #endif
 
+        #ifdef HAVE_BOOST_PROGRESS
+        boost::progress_display* disp;
+        int percent_done;
+        #endif
+
         // Physical constants and conversion factors
         static constexpr Real GAMMA = 2.67518e8;                  // MKS units
         static constexpr Real INVSQRT2 = 0.70710678118654746;     // 1/sqrt(2)
