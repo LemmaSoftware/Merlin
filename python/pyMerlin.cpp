@@ -70,6 +70,7 @@ PYBIND11_MODULE(Merlin, m) {
             .def("CalculateK0", &Lemma::KernelV0::CalculateK0, "Calculates an intial amplitude kernel")
 
             //.def("AlignWithAkvoDataset", &Lemma::KernelV0::AlignWithAkvoDataset, "Aligns the kernel parameters with a dataset")
+            .def("AlignWithAkvoDataset", py::overload_cast< const std::string& >(&Lemma::KernelV0::AlignWithAkvoDataset), "Aligns Kernel pulse with specified dataset file")
 
 
 

@@ -134,7 +134,7 @@ namespace Lemma {
          *   used in Python wrapping
          */
         static std::shared_ptr<KernelV0> DeSerialize( const std::string& node ) {
-            return KernelV0::DeSerialize(YAML::Load(node));
+            return KernelV0::DeSerialize(YAML::LoadFile(node));
         }
 
         // ====================  OPERATORS     =======================
@@ -159,6 +159,13 @@ namespace Lemma {
          *  Aligns the kernel pulse settings with an Akvo Processed dataset.
          */
         void AlignWithAkvoDataset( const YAML::Node& node ) ;
+
+        /**
+         *  Aligns the kernel pulse settings with an Akvo Processed dataset.
+         */
+        void AlignWithAkvoDataset( const std::string& file ) {
+            AlignWithAkvoDataset( YAML::LoadFile(file) );
+        }
 
         /**
          *   Assign transmiter coils
