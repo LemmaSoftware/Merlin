@@ -241,19 +241,23 @@ namespace Lemma {
         //for (ilay=0; ilay<Interfaces.size()-1; ++ilay) {
         std::cout.precision(3);
         for (ilay=0; ilay<Interfaces.size()-1; ++ilay) {
-            std::cout << "\n\nLayer " << ilay << "\tfrom " << Interfaces(ilay) <<" to "
-                      << Interfaces(ilay+1); // << std::endl;
+            //std::cout << "\n\nLayer " << ilay << "\tfrom " << Interfaces(ilay) <<" to "
+            //          << Interfaces(ilay+1) << std::endl;
             Size(2) = Interfaces(ilay+1) - Interfaces(ilay);
             Origin(2) = Interfaces(ilay);
 
-            #ifdef HAVE_BOOST_PROGRESS
+            //#ifdef HAVE_BOOST_PROGRESS
             percent_done = 0;
-            disp = new boost::progress_display( 100 );
+            disp = new ProgressBar( 100 );
+            disp->printNewMessage( "Integrating layer " + std::to_string(ilay) + " from " + std::to_string(Interfaces(ilay)) +
+                    " to " + std::to_string( Interfaces(ilay+1)) );
             IntegrateOnOctreeGrid( vtkOutput );
+            //disp->updateLastPrintedMessage("Number of leaves: " + std::to_string(nleaves));
+            disp->printNewMessage("Number of leaves: " + std::to_string(nleaves));
             delete disp;
-            #else
-            IntegrateOnOctreeGrid( vtkOutput );
-            #endif
+            //#else
+            //IntegrateOnOctreeGrid( vtkOutput );
+            //#endif
             //std::cout << "Kernel row " << Kern.row(ilay);
         }
         std::cout << "\nFinished KERNEL\n";
@@ -555,15 +559,13 @@ namespace Lemma {
     void KernelV0::EvaluateKids( const Vector3r& size, const int& level, const Vector3r& cpos,
         const VectorXcr& parentVal ) {
 
-        #ifdef HAVE_BOOST_PROGRESS
         int pdone =  (int)(1e2*VOLSUM/(Size[0]*Size[1]*Size[2]));
         if (pdone > percent_done ) {
             percent_done = pdone;
             ++(*disp);
         }
-        #else
-        std::cout << "\r" << (int)(1e2*VOLSUM/(Size[0]*Size[1]*Size[2])) << "\t" << nleaves;
-        #endif
+        //disp->updateLastPrintedMessage("Number of leaves: " + std::to_string(nleaves));
+        //std::cout << "\r" << (int)(1e2*VOLSUM/(Size[0]*Size[1]*Size[2])) << "\t" << nleaves;
         //std::cout.flush();
 
         // Next level step, interested in one level below
@@ -644,15 +646,12 @@ namespace Lemma {
     void KernelV0::EvaluateKids2( const Vector3r& size, const int& level, const Vector3r& cpos,
         const VectorXcr& parentVal, vtkHyperTreeGrid* oct, vtkHyperTreeCursor* curse) {
 
-        #ifdef HAVE_BOOST_PROGRESS
         int pdone =  (int)(1e2*VOLSUM/(Size[0]*Size[1]*Size[2]));
         if (pdone > percent_done ) {
             percent_done = pdone;
             ++(*disp);
         }
-        #else
-        std::cout << "\r" << (int)(1e2*VOLSUM/(Size[0]*Size[1]*Size[2])) << "\t" << nleaves;
-        #endif
+        //disp->updateLastPrintedMessage("Number of leaves: " + std::to_string(nleaves));
 
         // Next level step, interested in one level below
         // bitshift requires one extra, faster than, and equivalent to std::pow(2, level+1)
