@@ -39,6 +39,9 @@
 #include "vtkHyperTreeGrid.h"
 #include "vtkXMLHyperTreeGridWriter.h"
 #include "vtkHyperTreeCursor.h"  // not in VTK 8.90
+#ifdef LEMMA_VTK9_SUPPORT
+#include "vtkHyperTreeGridNonOrientedCursor.h"
+#endif
 //#include "vtkHyperTreeGridLevelEntry.h" VTK 9
 #include "vtkDoubleArray.h"
 #endif
@@ -350,8 +353,13 @@ namespace Lemma {
          *  Same functionality as @see EvaluateKids, but includes generation of a VTK
          *  HyperOctree, which is useful for visualization.
          */
+        #ifdef LEMMA_VTK8_SUPPORT
         void EvaluateKids2(  const Vector3r& size, const int& level, const Vector3r& cpos,
                             const VectorXcr& parentVal, vtkHyperTreeGrid* octree, vtkHyperTreeCursor* curse );
+        #elif LEMMA_VTK9_SUPPORT
+        void EvaluateKids2(  const Vector3r& size, const int& level, const Vector3r& cpos,
+                            const VectorXcr& parentVal, vtkHyperTree* octree, vtkHyperTreeGridNonOrientedCursor* curse );
+        #endif
 
         void GetPosition( vtkHyperTreeCursor* Cursor, Real* p );
         #endif

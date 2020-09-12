@@ -278,8 +278,13 @@ namespace Lemma {
         } else {
         #ifdef LEMMAUSEVTK
             vtkHyperTreeGrid* oct = vtkHyperTreeGrid::New();
+                #if LEMMA_VTK8_SUPPORT
                 oct->SetGridSize( 1, 1, 1 ); // Important!
                 oct->SetDimension(3);
+                #elif LEMMA_VTK9_SUPPORT
+                oct->SetExtent( 0, 1, 0, 1, 0, 1 ); // Important!
+                oct->SetDimensions(1,1,1);
+                #endif
                 vtkNew<vtkDoubleArray> xcoords;
                     xcoords->SetNumberOfComponents(1);
                     xcoords->SetNumberOfTuples(2);
@@ -306,9 +311,15 @@ namespace Lemma {
 
             //vtkHyperTreeGridLevelEntry* curse2 =  vtkHyperTreeGridLevelEntry::New(); // VTK 9
             // I belive the index in NewCursor maybe points to which cell in the Rectilinear Grid?
+            #if LEMMA_VTK8_SUPPORT
             vtkHyperTreeCursor* curse = oct->NewCursor(0, true); // true creates the cursor
                 curse->ToRoot();
             EvaluateKids2( Size, 0, cpos, VectorXcr::Ones(PulseI.size()), oct, curse );
+            #elif LEMMA_VTK9_SUPPORT
+            auto curse = oct->NewNonOrientedCursor(0, true); // true creates the cursor
+                curse->ToRoot();
+            EvaluateKids2( Size, 0, cpos, VectorXcr::Ones(PulseI.size()), oct->GetTree(0, true), curse );
+            #endif
 
             for (int iq=0; iq<PulseI.size(); ++iq) {
 
@@ -643,9 +654,13 @@ namespace Lemma {
     //       Class:  KernelV0
     //      Method:  EvaluateKids2 -- same as Evaluate Kids, but include VTK octree generation
     //--------------------------------------------------------------------------------------
+    #ifdef LEMMA_VTK8_SUPPORT
     void KernelV0::EvaluateKids2( const Vector3r& size, const int& level, const Vector3r& cpos,
         const VectorXcr& parentVal, vtkHyperTreeGrid* oct, vtkHyperTreeCursor* curse) {
-
+    #elif LEMMA_VTK9_SUPPORT
+    void KernelV0::EvaluateKids2( const Vector3r& size, const int& level, const Vector3r& cpos,
+        const VectorXcr& parentVal, vtkHyperTree* oct, vtkHyperTreeGridNonOrientedCursor* curse) {
+    #endif
         int pdone =  (int)(1e2*VOLSUM/(Size[0]*Size[1]*Size[2]));
         if (pdone > percent_done ) {
             percent_done = pdone;
@@ -708,7 +723,11 @@ namespace Lemma {
         // Evaluate whether or not furthur splitting is needed
         if ( (((ksum - parentVal).array().abs() > tol).any() && level<maxLevel) || level < minLevel ) {
             // 0 after curse is vtkIdType?
+            #ifdef LEMMA_VTK8_SUPPORT
             oct->SubdivideLeaf(curse, 0);
+            #elif LEMMA_VTK9_SUPPORT
+            curse->SubdivideLeaf();
+            #endif
             for (int ichild=0; ichild<8; ++ichild) {
                 curse->ToChild(ichild);
                 Vector3r cp = pos; // Eigen complains about combining these
@@ -739,7 +758,11 @@ namespace Lemma {
          */
 
         // 0 after curse is vtkIdType?
+        #ifdef LEMMA_VTK8_SUPPORT
         oct->SubdivideLeaf(curse, 0);
+        #elif LEMMA_VTK9_SUPPORT
+        curse->SubdivideLeaf();
+        #endif
         for (int ichild=0; ichild<8; ++ichild) {
             curse->ToChild(ichild);
             LeafDict[curse->GetVertexId()] = ksum/(8.*vol);

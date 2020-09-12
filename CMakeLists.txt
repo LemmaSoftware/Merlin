@@ -21,25 +21,38 @@ set_target_properties(merlin PROPERTIES
 	PROJECT_LABEL "MERLIN ${LABEL_SUFFIX}"
 )
 
-# Linking
-target_link_libraries(merlin "lemmacore" "fdem1d" )
-
-# Linking
-if ( LEMMA_VTK6_SUPPORT OR LEMMA_VTK7_SUPPORT ) 
+###########
+# Linking #
+###########
+if ( LEMMA_VTK8_SUPPORT ) 
 	target_link_libraries(merlin ${VTK_LIBRARIES})
 endif()
 
-# Testing
+if ( LEMMA_VTK9_SUPPORT ) 
+	target_link_libraries(merlin ${visibility} VTK::CommonCore VTK::CommonDataModel VTK::RenderingCore VTK::FiltersHyperTree VTK::FiltersCore)
+	vtk_module_autoinit(TARGETS merlin MODULES VTK::CommonCore VTK::RenderingCore)
+endif()
+
+target_link_libraries(merlin "lemmacore" "fdem1d" )
+
+
+###########
+# Testing #
+###########
 if (LEMMA_ENABLE_TESTING)
 	add_subdirectory(testing)
 endif()
 
-# Python Bindings
+###################
+# Python Bindings #
+###################
 if (LEMMA_PYTHON3_BINDINGS)
 	add_subdirectory(python)
 endif()
 
-# Install
+###########
+# Install #
+###########
 install ( TARGETS merlin DESTINATION ${CMAKE_INSTALL_PREFIX}/lib )
 install ( FILES include/Merlin  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/Lemma ) 
 install ( DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include/Lemma  FILES_MATCHING PATTERN "*.h")
@@ -47,7 +60,9 @@ install ( DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include/Lemma  
 #install ( DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include/Lemma/  FILES_MATCHING PATTERN "FDEM1D")
 #install ( DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include/Lemma/FDEM1D  FILES_MATCHING PATTERN "*.h")
 
-# Examples
+############
+# Examples #
+############
 if (LEMMA_BUILD_EXAMPLES)
 	add_subdirectory(examples)
 endif()
