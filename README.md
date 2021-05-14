@@ -1,4 +1,4 @@
 ==About
-Merlin is a NMR modelling module for Lemma. 
+Merlin is a surface  NMR modelling module for Lemma. 
 
 =Capabilities 
