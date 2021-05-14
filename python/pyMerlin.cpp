@@ -56,6 +56,7 @@ PYBIND11_MODULE(Merlin, m) {
             .def("SetPulseDuration", &Lemma::KernelV0::SetPulseDuration, "Sets the duration of the pulse")
             .def("SetDepthLayerInterfaces", &Lemma::KernelV0::SetDepthLayerInterfaces, "Sets the layer depth interfaces")
             .def("SetHankelTransformType", &Lemma::KernelV0::SetHankelTransformType, "Sets the Hankel transform type")
+            .def("SetDf", &Lemma::KernelV0::SetDf, "Sets the transmitter offset frequncy in Hz, (Txf - Lf)")
 
             // accessors
             .def("GetName", &Lemma::KernelV0::GetName, "Returns the name of the class")
@@ -65,6 +66,7 @@ PYBIND11_MODULE(Merlin, m) {
             .def("GetInterfaces", &Lemma::KernelV0::GetInterfaces, "Returns the layer interfaces")
             .def("GetPulseCurrent", &Lemma::KernelV0::GetPulseCurrent, "Returns the pulse current")
             .def("GetPulseDuration", &Lemma::KernelV0::GetPulseDuration, "Returns the length of the pulse moment")
+            .def("GetDf", &Lemma::KernelV0::GetDf, "Returns the transmitter offset in Hz")
 
             // operations
             .def("CalculateK0", &Lemma::KernelV0::CalculateK0, "Calculates an intial amplitude kernel")

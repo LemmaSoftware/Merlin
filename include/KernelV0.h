@@ -216,6 +216,20 @@ namespace Lemma {
         }
 
         /**
+         * @param[in] dfin is the transmitter offset from Larmor in Hz. Calculated as Txf - Lf
+         */
+        inline void SetDf( const Real& dfin ) {
+            df = dfin;
+        }
+
+        /**
+         * @return the pulse offset from the Larmor frequency
+         */
+        inline Real GetDf ( ) {
+            return df;
+        }
+
+        /**
          * @param[in] value the 1D-EM model used for calculations
          */
         inline void SetLayeredEarthEM ( std::shared_ptr< LayeredEarthEM > value ) {
@@ -376,6 +390,7 @@ namespace Lemma {
         Real                                      Temperature=283.;
         Real                                      Taup = .020;  // Sec
         Real                                      Larmor;
+        Real                                      df=0;
 
         Vector3r                                  Size;
         Vector3r                                  Origin;

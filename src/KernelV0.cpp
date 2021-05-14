@@ -218,6 +218,10 @@ namespace Lemma {
                 EMEarths[tx]->SetHankelTransformMethod(HankelType);
                 EMEarths[tx]->SetTxRxMode(TX);
                 TxRx[tx]->SetCurrent(1.);
+
+                // calculate df TODO, fix for multiple tx frequencies
+                df = TxRx[tx]->GetFrequency(0) - Larmor/(2.*PI);
+                std::cout << "df=" << df << std::endl;
         }
         for (auto rx : Rx) {
             if (EMEarths.count(rx)) {
@@ -482,9 +486,35 @@ namespace Lemma {
         // Calcuate vector of all responses
         VectorXcr F = VectorXcr::Zero( PulseI.size() );
         for (int iq=0; iq<PulseI.size(); ++iq) {
-            // Compute the tipping angle
+
+            /////////////////////////////////////////////////////////////////////////////
+            // Compute the tipping angle for on-resonance
+            // Weichman formulation
+            /*
             Real sintheta = std::sin(0.5*GAMMA*PulseI(iq)*Taup*(EBT.alpha-EBT.beta));
             F(iq) = -volume*Complex(0,Larmor)*Mn0Abs*(EBR.alpha+EBR.beta)*ejztr*sintheta*PhaseTerm;
+            */
+
+            /////////////////////////////////////////////////////////////////////////////
+            // compute tipping ange for off-resonance, from MRSMatlab (Mueller, et. al)
+            // but based on seperate works by Grombacher and Walbrecher.
+            //theta    = atan2(0.5*gamma*pm_vec(n)/taup*(Bcomps.alpha - Bcomps.beta),(2*pi*df));
+            //flip_eff = sqrt((0.5*gamma*pm_vec(n)*(Bcomps.alpha - Bcomps.beta)).^2 + ...
+            //            (2*pi*df*taup).^2 );
+            //m     = sin(flip_eff) .* sin(theta) + ...
+            //    1i*(-1)*sin(theta).*cos(theta) .* (cos(flip_eff) - 1);
+            //kern = gamma * earth.erdt^2 * 3.29e-3 * Px .* Bcomps.e_zeta.^2 .* ...
+            //            (Bcomps.alpha + Bcomps.beta) .* m;
+            //K(n,:) = sum(sum(kern.*dh*dz));
+            // TODO, benchmark calls to pow below...modern compilers should optimize this
+            // Real df = 25;  // Hz? df is a class data member
+            Real theta = std::atan2( 0.5*GAMMA*PulseI(iq)*(EBT.alpha-EBT.beta), 2*PI*df );
+            Real flip_eff = std::sqrt( std::pow(0.5*GAMMA*PulseI(iq)*Taup*(EBT.alpha-EBT.beta),2) +
+                                       std::pow(2*PI*df*Taup,2));
+            Complex m = std::sin(flip_eff)*std::sin(theta) +
+                Complex(0,-1)*std::sin(theta)*std::cos(theta) * (std::cos(flip_eff) - 1.);
+
+            F(iq) = -volume*Complex(0,Larmor)*Mn0Abs*(EBR.alpha+EBR.beta)*ejztr*m*PhaseTerm;
         }
         return F;
     }
